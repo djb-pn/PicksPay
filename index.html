@@ -6,26 +6,29 @@
     <title>Picks Payroll Data Processor</title>
         <link rel="icon" href="/Favicon16.ico" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
+      <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
-        .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #404040; } /* Adjusted border for dark log */
+        .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #404040; }
         
         /* Define custom brand colors: Primary Accent #760000, Structure #595959, White #FFFFFF */
-        .bg-picks-red { background-color: #760000; } /* Main Brand Red */
-        .hover\:bg-picks-red-dark:hover { background-color: #5A0000; } /* Darker Red for hover */
-        .focus\:ring-picks-red-light:focus { --tw-ring-color: #A34747; } /* Lighter Red for focus ring */
-        .text-picks-dark-gray { color: #595959; } /* Main Brand Gray */
-        .bg-picks-structure { background-color: #595959; } /* Log/Alert Background */
-        .border-picks-structure-light { border-color: #8C8C8C; } /* Lighter border for contrast */
+        .bg-picks-red { background-color: #760000; }
+        .hover\:bg-picks-red-dark:hover { background-color: #5A0000; }
+        .focus\:ring-picks-red-light:focus { --tw-ring-color: #A34747; }
+        .text-picks-dark-gray { color: #595959; }
+        
+        /* FIX: Adding !important to force the custom background over Tailwind's defaults */
+        .bg-picks-structure { background-color: #595959 !important; } 
+        
+        .border-picks-structure-light { border-color: #8C8C8C; }
 
         /* Log text colors (ensuring white text on dark #595959 background) */
-        .log-entry.text-red-700 { color: #FFB3B3; } /* Very light red for high-contrast error details */
-        .log-entry.text-gray-800 { color: #FFFFFF; } /* White text for standard logs */
-        .log-entry .text-gray-400 { color: #CCCCCC; } /* Lighter gray for timestamp */
+        .log-entry.text-red-700 { color: #FFB3B3; }
+        .log-entry.text-gray-800 { color: #FFFFFF; }
+        .log-entry .text-gray-400 { color: #CCCCCC; }
 
         /* Override Tailwind's default gray text color in the log for better contrast */
         #logContainer p.text-gray-400 { color: #CCCCCC !important; }
-    </style>
+      </style>
 </head>
 <body>
 
@@ -498,3 +501,4 @@
 </script>
 </body>
 </html>
+

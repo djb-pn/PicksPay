@@ -75,7 +75,7 @@
                     ⚠️ **PROXY REQUIRED:** This app must call a serverless proxy to access the Striven reports securely.
                 </p>
                 <p class="mt-2 p-2 bg-blue-100 text-blue-800 rounded-md border border-blue-300" id="proxy-alert">
-                    Please replace the **PROXY_URL** and **GITHUB_USERNAME** placeholders in the script below with your actual values.
+                    The app is using the configured proxy: <code class="font-bold">https://pickspay.darin-075.workers.dev</code>
                 </p>
             </div>
         </div>
@@ -90,6 +90,8 @@
         const GITHUB_USERNAME = "djb-pn"; 
         // --- PROXY CONFIGURATION END ---
         
+        // 15-second timeout for the proxy request
+        const FETCH_TIMEOUT_MS = 15000; 
 
         // Helper to update the log panel
         const log = (message, type = 'info') => {
@@ -436,17 +438,18 @@
         // Function to safely fetch data via the proxy
         async function fetchData(reportKey, attempt = 1) {
             
-            // Check for unconfigured proxy URL
-            if (PROXY_URL.includes("YOUR-WORKER-NAME") || GITHUB_USERNAME.includes("YOUR-GITHUB-USERNAME")) {
-                throw new Error("Proxy configuration incomplete. Please update PROXY_URL and GITHUB_USERNAME.");
-            }
-            
             // The request hits the worker URL, specifying which report it needs.
             const proxyEndpoint = `${PROXY_URL}?report=${reportKey}`;
             log(`Attempting to fetch Report ${reportKey} via proxy: ${proxyEndpoint}`);
             
+            // Set up a controller for the timeout
+            const controller = new AbortController();
+            const signal = controller.signal;
+            const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
             try {
-                const response = await fetch(proxyEndpoint);
+                const response = await fetch(proxyEndpoint, { signal });
+                clearTimeout(timeoutId);
 
                 if (response.status === 403) {
                      // 403 usually means the CORS/Origin check failed on the Worker side
@@ -456,6 +459,11 @@
                 
                 if (!response.ok) {
                     const errorBody = await response.text();
+                    // Check if the Worker returned a CORS error (Worker is running, but Striven fetch failed)
+                    if (errorBody.includes('Worker fetch error')) {
+                         log(`Worker Internal Error: The proxy failed to fetch data from the Striven API. Status: ${response.status}.`, 'error');
+                         throw new Error("Worker internal fetch failure.");
+                    }
                     throw new Error(`Proxy HTTP error! status: ${response.status}. Detail: ${errorBody.slice(0, 100)}...`);
                 }
                 
@@ -470,13 +478,20 @@
                 }
 
             } catch (error) {
-                if (attempt < 3 && error.message.includes("Failed to fetch")) {
-                    // Implement exponential backoff for network issues
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    log(`Fetch attempt ${attempt} timed out after ${FETCH_TIMEOUT_MS / 1000} seconds.`, 'error');
+                    error.message = 'Request timed out.';
+                }
+
+                if (attempt < 3 && !error.message.includes("Worker internal fetch failure")) {
+                    // Implement exponential backoff for network issues or transient Worker issues
                     const delay = 2 ** attempt * 1000;
                     log(`Fetch attempt ${attempt} failed. Retrying in ${delay / 1000}s...`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                     return fetchData(reportKey, attempt + 1);
                 }
+                
                 log(`Final Fetch failed for Report ${reportKey}: ${error.message}.`, 'error');
                 throw new Error("Proxy or Network error. Using mock data for demonstration.");
             }
@@ -495,18 +510,9 @@
             spinner.classList.remove('hidden');
             log(`Process started at ${new Date().toLocaleTimeString()}...`);
             
-            // Check for placeholder values immediately
-            if (PROXY_URL.includes("YOUR-WORKER-NAME") || GITHUB_USERNAME.includes("YOUR-GITHUB-USERNAME")) {
-                log("FATAL ERROR: Proxy configuration is incomplete. Update PROXY_URL and GITHUB_USERNAME in the script.", 'error');
-                button.disabled = false;
-                spinner.classList.add('hidden');
-                return;
-            }
-            
             // Display the GitHub Pages URL used for Worker security reference
-            const githubUrl = `https://${GITHUB_USERNAME.toLowerCase()}.github.io/PicksPay`;
-            log(`App running from: ${githubUrl}`);
-            document.getElementById('proxy-alert').innerHTML = `**Worker's ALLOWED\_ORIGIN must be set to:** <code class="font-bold">${githubUrl}</code>`;
+            const githubUrl = `https://${GITHUB_USERNAME.toLowerCase()}.github.io`;
+            document.getElementById('proxy-alert').innerHTML = `**Worker's ALLOWED\_ORIGIN must be set to:** <code class="font-bold">${githubUrl}</code>. App is using proxy: <code class="font-bold">${PROXY_URL}</code>`;
 
             let report1Data = null;
             let report2Data = null;

@@ -437,7 +437,7 @@
         async function fetchData(reportKey, attempt = 1) {
             
             // Check for unconfigured proxy URL
-            if (PROXY_URL.includes("https://pickspay.darin-075.workers.dev/") || GITHUB_USERNAME.includes("YOUR-GITHUB-USERNAME")) {
+            if (PROXY_URL.includes("YOUR-WORKER-NAME") || GITHUB_USERNAME.includes("YOUR-GITHUB-USERNAME")) {
                 throw new Error("Proxy configuration incomplete. Please update PROXY_URL and GITHUB_USERNAME.");
             }
             
@@ -496,7 +496,7 @@
             log(`Process started at ${new Date().toLocaleTimeString()}...`);
             
             // Check for placeholder values immediately
-            if (PROXY_URL.includes("https://pickspay.darin-075.workers.dev/") || GITHUB_USERNAME.includes("YOUR-GITHUB-USERNAME")) {
+            if (PROXY_URL.includes("YOUR-WORKER-NAME") || GITHUB_USERNAME.includes("YOUR-GITHUB-USERNAME")) {
                 log("FATAL ERROR: Proxy configuration is incomplete. Update PROXY_URL and GITHUB_USERNAME in the script.", 'error');
                 button.disabled = false;
                 spinner.classList.add('hidden');

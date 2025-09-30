@@ -3,584 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Striven Payroll Data Processor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
+    <title>PicksPay Payroll Processor</title>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
     <style>
-        .log-box {
-            height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: monospace;
-            background-color: #f9fafb;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
+        .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #e0e0e0; }
+        .log-alert { font-weight: bold; color: #dc2626; }
     </style>
 </head>
-<body class="bg-gray-100 p-4 sm:p-8 font-sans">
+<body>
 
-    <div class="max-w-4xl mx-auto">
-        <header class="text-center mb-10">
-            <h1 class="3xl:text-4xl font-extrabold text-indigo-700">Striven Payroll Data ETL</h1>
-            <p class="text-gray-600 mt-2">Consolidate and transform Striven reports into payroll-ready CSV.</p>
-        </header>
+<div class="min-h-screen p-4 sm:p-8">
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-6 sm:p-10">
 
-        <!-- Configuration and Action Card -->
-        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg mb-8">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Configuration</h2>
+        <h1 class="text-3xl font-extrabold text-indigo-800 mb-2">Payroll Data Processor</h1>
+        <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
 
-            <div class="space-y-4">
-                <div>
-                    <label for="url1" class="block text-sm font-medium text-gray-700">Report 1 (Time Entry Data)</label>
-                    <input type="text" id="url1" value="https://api.striven.com/v2/reports/mMSZsQF0CyRyRAnpnULyr8CwAeqL9CSBy0YWVJTSgMChnr0eafiiI6d5r2L1mB6sPtAMjT78oocfUmN0Io0w" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500" readonly>
-                </div>
-                <div>
-                    <label for="url2" class="block text-sm font-medium text-gray-700">Report 2 (Employee Rates/Mapping)</label>
-                    <input type="text" id="url2" value="https://api.striven.com/v2/reports/4N9G5m5Ss0sZP9A4Fx1eZzuqdQbztB5GqU0A4UalE5xRUDrjQDIOzAlhhJoEX9t8TvucFT5GmRJB0bic8VwQ" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500" readonly>
-                </div>
-            </div>
-
-            <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:bg-indigo-400">
-                <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Process Data and Generate Payroll File
-            </button>
-
-            <div id="downloadArea" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg text-center hidden">
-                <p class="text-green-800 font-semibold mb-2">Processing Complete!</p>
-                <button id="downloadButton" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-150 ease-in-out">
-                    Download Payroll CSV
-                </button>
-            </div>
+        <!-- Proxy Status Alert (Initial State/Failure) -->
+        <div id="proxy-alert" class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-4 rounded-lg mb-6 hidden" role="alert">
         </div>
 
-        <!-- Evidence/Logging Card -->
-        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Execution Log & Evidence</h2>
-            
-            <div id="log" class="log-box p-4 rounded-lg text-sm text-gray-700 mb-4">
-                <p>Ready to process. Press the button above to begin the data extraction and transformation process.</p>
-                <p class="mt-2 p-2 bg-yellow-100 text-yellow-800 rounded-md border border-yellow-300">
-                    ⚠️ **PROXY REQUIRED:** This app must call a serverless proxy to access the Striven reports securely.
-                </p>
-            </div>
-            
-            <!-- MOVED OUTSIDE #log -->
-            <p class="p-2 bg-blue-100 text-blue-800 rounded-lg border border-blue-300 text-sm" id="proxy-alert">
-                The app is using the configured proxy: <code class="font-bold">https://pickspay.darin-075.workers.dev</code>
-            </p>
+        <!-- Main Action Button -->
+        <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:bg-indigo-400">
+            <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="buttonText">Process Data and Generate Payroll File</span>
+        </button>
+
+        <!-- Download Area (Hidden until complete) -->
+        <div id="downloadArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Processing Complete!</h2>
+            <button id="downloadCSV" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-150">
+                Download Payroll CSV
+            </button>
+            <p class="text-sm text-gray-500 mt-2">File name: payroll_upload_[Date].csv</p>
+        </div>
+
+        <!-- Execution Log & Evidence -->
+        <h2 class="text-xl font-bold text-indigo-800 mt-8 mb-4">Execution Log & Evidence</h2>
+        <div id="logContainer" class="bg-gray-50 p-4 border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
+            <p class="text-gray-500">Log empty. Click 'Process Data' to begin...</p>
         </div>
     </div>
+</div>
 
-    <script type="module">
-        // Wrap the entire script in an IIFE to ensure local variables and functions are available when needed
-        (() => {
-            // --- PROXY CONFIGURATION START (You MUST update these after deploying your Cloudflare Worker) ---
-            // 1. Enter the URL for your deployed Cloudflare Worker (e.g., https://picks-pay-proxy.workers.dev)
-            const PROXY_URL = "https://pickspay.darin-075.workers.dev"; 
-            
-            // 2. Enter your GitHub username (This is used to construct the final GitHub Pages URL for logging/security reference)
-            const GITHUB_USERNAME = "djb-pn"; 
-            // --- PROXY CONFIGURATION END ---
-            
-            // 15-second timeout for the proxy request
-            const FETCH_TIMEOUT_MS = 15000; 
+<script type="module">
+    // ====================================================================
+    // 1. CONFIGURATION (MUST BE EDITED)
+    // ====================================================================
 
-            // Helper to update the log panel
-            const log = (message, type = 'info') => {
-                const logElement = document.getElementById('log');
-                const color = type === 'error' ? 'text-red-600' : (type === 'success' ? 'text-green-600' : 'text-gray-700');
-                const prefix = type === 'error' ? 'ERROR: ' : (type === 'success' ? 'SUCCESS: ' : '');
-                logElement.innerHTML += `<p class="mt-1 ${color}">${prefix}${message}</p>`;
-                logElement.scrollTop = logElement.scrollHeight; // Auto-scroll
-            };
+    // NOTE: This URL must be manually updated to your deployed Cloudflare Worker address.
+    const PROXY_URL = "[https://pickspay.darin-075.workers.dev](https://pickspay.darin-075.workers.dev)";
+    
+    // NOTE: This must be manually updated to your exact GitHub username (used for security alert).
+    const GITHUB_USERNAME = "djb-pn"; 
 
-            // --- Transformation Helper Functions ---
+    const ENDPOINT_MAP = {
+        'report1': 'mMSZsQF0CyRyRAnpnULyr8CwAeqL9CSBy0YWVJTSgMChnr0eafiiI6d5r2L1mB6sPtAMjT78oocfUmN0Io0w', // Time Entry Data
+        'report2': '4N9G5m5Ss0sZP9A4Fx1eZzuqdQbztB5GqU0A4UalE5xRUDrjQDIOzAlhhJoEX9t8TvucFT5GmRJB0bic8VwQ'  // PTO/Pay Code Details (Currently mocked)
+    };
 
-            /**
-             * Formats a date string (YYYY-MM-DD or similar) into MMDDYYYY format.
-             * @param {string} dateString - The date string from the source data.
-             * @returns {string} The date in MMDDYYYY format.
-             */
-            const formatDate = (dateString) => {
-                if (!dateString) return '';
-                // Handle ISO date formats by taking only the date part
-                const date = new Date(dateString.split('T')[0]); 
-                if (isNaN(date)) return '';
-                const m = String(date.getMonth() + 1).padStart(2, '0');
-                const d = String(date.getDate()).padStart(2, '0');
-                const y = date.getFullYear();
-                return `${m}${d}${y}`;
-            };
-            
-            /**
-             * Calculates the Week Ending date (Saturday) for a given date.
-             * Based on the sample data, the week ends on Saturday.
-             * @param {string} dateString - The date string from the source data (e.g., "2025-09-21").
-             * @returns {string} The Saturday's date in YYYY-MM-DD format.
-             */
-            const getWeekEndingDate = (dateString) => {
-                if (!dateString) return '';
-                const date = new Date(dateString.split('T')[0]); 
-                if (isNaN(date)) return '';
-                
-                // 0=Sunday, 6=Saturday. Find the next Saturday.
-                const dayOfWeek = date.getDay();
-                
-                // Calculate days remaining until Saturday (6)
-                const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
-                
-                date.setDate(date.getDate() + daysUntilSaturday);
-                
-                // Return in YYYY-MM-DD format for internal use before MMDDYYYY formatting
-                return date.toISOString().split('T')[0]; 
-            };
+    const LOCATION_MAP = {
+        'Osage Beach': '1',
+        'Columbia': '2'
+    };
+    
+    // --------------------------------------------------------------------
 
-            /**
-             * Extracts the last sequence of all-caps letters from a string.
-             * @param {string} rawString - The raw string (e.g., "IT Department - CODE").
-             * @returns {string} The extracted code (e.g., "CODE").
-             */
-            const extractCode = (rawString) => {
-                if (!rawString) return '';
-                // Regex to find one or more uppercase letters at the very end of the string
-                const matches = rawString.match(/([A-Z]+)$/);
-                return matches ? matches[1] : '';
-            };
+    // ====================================================================
+    // 2. HELPER FUNCTIONS
+    // ====================================================================
 
-            // Location mapping constant
-            const LOCATION_MAP = {
-                'OSAGE BEACH': '1',
-                'COLUMBIA': '2'
-                // Add other locations as necessary
-            };
+    /** Logs a message to the UI log container. */
+    const log = (message, isError = false) => {
+        const logContainer = document.getElementById('logContainer');
+        const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const logEntry = document.createElement('p');
+        logEntry.className = isError ? 'log-entry text-red-700' : 'log-entry text-gray-800';
+        logEntry.innerHTML = `<span class="text-gray-400">${timestamp} | </span>${message}`;
+        
+        // Remove 'Log empty' message if present
+        if (logContainer.querySelector('.text-gray-500')) {
+            logContainer.innerHTML = '';
+        }
 
-            // --- Holiday Calculation and Checking Functions ---
-            
-            const getPaidHolidays = (year) => {
-                const holidays = [];
+        logContainer.appendChild(logEntry);
+        logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to bottom
+    };
 
-                // Helper to find the Nth weekday (0=Sun, 1=Mon, ..., 6=Sat) in a month
-                const getNthWeekdayOfMonth = (year, month, dayOfWeek, n) => {
-                    let date = new Date(year, month, 1);
-                    let count = 0;
-                    let targetDate = null;
-                    
-                    while (date.getMonth() === month) {
-                        if (date.getDay() === dayOfWeek) {
-                            count++;
-                            if (count === n) {
-                                targetDate = new Date(date);
-                                break; // Found the date
-                            }
-                        }
-                        date.setDate(date.getDate() + 1);
+    /** Formats a date string into MMDDYYYY format. */
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        if (isNaN(date)) {
+            log(`Warning: Could not parse date: ${dateStr}. Using raw string.`, true);
+            return dateStr;
+        }
+        // Use UTC date methods to prevent timezone shifts from changing the day
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const year = date.getUTCFullYear();
+        return `${month}${day}${year}`;
+    };
+
+    /** Extracts the all-caps code from the end of a string (e.g., "Install: MSDSHELBA - SVG" -> "SVG") */
+    const extractCode = (rawText, fieldName) => {
+        if (!rawText) return log(`Warning: ${fieldName} is null/empty. Using 'NA'.`, true) || 'NA';
+        
+        const match = rawText.match(/\s-\s([A-Z0-9]+)$/);
+        if (match && match[1]) {
+            return match[1];
+        }
+        log(`Warning: Could not extract all-caps code from ${fieldName}: "${rawText}". Using 'NA'.`, true);
+        return 'NA';
+    };
+
+    /** Generates the next Saturday's date (Week Ending Date) in MMDDYYYY format. */
+    const calculateWeekEndingDate = (dateStr) => {
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr;
+
+        // 0 = Sunday, 6 = Saturday. Payroll week ends on Saturday (6).
+        const dayOfWeek = date.getDay();
+        const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+        
+        // Adjust the date to the next Saturday
+        date.setDate(date.getDate() + daysUntilSaturday);
+
+        return formatDate(date);
+    };
+
+    // Helper to calculate US Paid Holidays for the given year
+    const getHolidays = (year) => {
+        const holidays = new Set();
+        const addHoliday = (month, day) => holidays.add(formatDate(new Date(Date.UTC(year, month, day))));
+
+        // New Year's Day (Jan 1)
+        addHoliday(0, 1);
+        
+        // Independence Day (July 4)
+        addHoliday(6, 4);
+
+        // Christmas Day (Dec 25)
+        addHoliday(11, 25);
+        
+        // Helper for Nth day of month (e.g., last Monday in May)
+        const getNthDayOfMonth = (n, dayOfWeek, month) => {
+            const date = new Date(Date.UTC(year, month, 1));
+            let count = 0;
+            while (date.getUTCMonth() === month) {
+                if (date.getUTCDay() === dayOfWeek) {
+                    count++;
+                    if (n === 'last' ? date.getUTCMonth() === month : count === n) {
+                        return date;
                     }
-                    return targetDate;
-                };
-                
-                // Helper to find the Last weekday (0=Sun, 1=Mon, ..., 6=Sat) in a month
-                const getLastWeekdayOfMonth = (year, month, dayOfWeek) => {
-                    let date = new Date(year, month + 1, 0); // Start at the last day of the month
-                    while (date.getDay() !== dayOfWeek) {
-                        date.setDate(date.getDate() - 1);
-                    }
+                }
+                date.setUTCDate(date.getUTCDate() + 1);
+                if (n === 'last' && date.getUTCMonth() !== month) {
+                    date.setUTCDate(date.getUTCDate() - 1); // Roll back to last day of week in month
                     return date;
-                };
-
-
-                // 1. New Year's Day (Fixed): Jan 1
-                holidays.push({ name: "New Year's Day", date: new Date(year, 0, 1) });
-
-                // 2. Memorial Day (Relative): Last Monday in May (Month 4)
-                const memorialDay = getLastWeekdayOfMonth(year, 4, 1);
-                if (memorialDay) holidays.push({ name: "Memorial Day", date: memorialDay });
-
-                // 3. Independence Day (Fixed): July 4
-                holidays.push({ name: "Independence Day", date: new Date(year, 6, 4) });
-
-                // 4. Labor Day (Relative): First Monday in September (Month 8)
-                const laborDay = getNthWeekdayOfMonth(year, 8, 1, 1);
-                if (laborDay) holidays.push({ name: "Labor Day", date: laborDay });
-
-                // 5. Thanksgiving Day (Relative): Fourth Thursday in November (Month 10)
-                const thanksgiving = getNthWeekdayOfMonth(year, 10, 4, 4);
-                if (thanksgiving) holidays.push({ name: "Thanksgiving Day", date: thanksgiving });
-
-                // 6. Christmas Day (Fixed): December 25
-                holidays.push({ name: "Christmas Day", date: new Date(year, 11, 25) });
-                
-                // Filter out invalid dates just in case
-                return holidays.filter(h => !isNaN(h.date.getTime()));
-            };
-
-            const checkHolidays = (timeEntries) => {
-                if (!timeEntries || timeEntries.length === 0) return;
-
-                // 1. Determine the pay period date range
-                let minTimestamp = Infinity;
-                let maxTimestamp = -Infinity;
-                let dataYear = 0;
-
-                timeEntries.forEach(entry => {
-                    const entryDate = new Date(entry.Date);
-                    if (isNaN(entryDate.getTime())) return;
-
-                    const dateTimestamp = entryDate.getTime();
-                    
-                    if (dateTimestamp < minTimestamp) minTimestamp = dateTimestamp;
-                    if (dateTimestamp > maxTimestamp) maxTimestamp = dateTimestamp;
-                    
-                    // Use the year of the latest entry
-                    dataYear = entryDate.getFullYear();
-                });
-                
-                if (minTimestamp === Infinity) {
-                    log("Could not determine a valid pay period date range for holiday check.", 'error');
-                    return;
                 }
+            }
+            return null;
+        };
 
-                // Create clean date objects for range checking
-                const periodStart = new Date(minTimestamp);
-                periodStart.setHours(0, 0, 0, 0); // Normalize time to start of day
-                
-                const periodEnd = new Date(maxTimestamp);
-                periodEnd.setHours(23, 59, 59, 999); // Normalize time to end of day
+        // Memorial Day (Last Monday in May)
+        const memorialDay = getNthDayOfMonth('last', 1, 4); // 1=Monday, 4=May
+        if (memorialDay) holidays.add(formatDate(memorialDay));
 
-                // Get holidays for the relevant year
-                const holidays = getPaidHolidays(dataYear);
-                const foundHolidays = [];
+        // Labor Day (First Monday in September)
+        const laborDay = getNthDayOfMonth(1, 1, 8); // 1=Monday, 8=September
+        if (laborDay) holidays.add(formatDate(laborDay));
 
-                log(`Pay period date range: ${periodStart.toLocaleDateString()} to ${periodEnd.toLocaleDateString()}`);
-
-                // 2. Check each holiday against the period range
-                holidays.forEach(holiday => {
-                    // Check if holiday date falls within the period (inclusive)
-                    if (holiday.date >= periodStart && holiday.date <= periodEnd) {
-                        foundHolidays.push(holiday.name);
-                    }
-                });
-
-                // 3. Log warning if found
-                if (foundHolidays.length > 0) {
-                    log(`\n🚨 PAID HOLIDAY ALERT! The following paid holidays fall within the pay period: ${foundHolidays.join(', ')}.\n`, 'error');
-                } else {
-                    log("No paid US major holidays detected in this pay period.", 'success');
+        // Thanksgiving Day (Fourth Thursday in November)
+        const getFourthThursday = (year) => {
+            const date = new Date(Date.UTC(year, 10, 1)); // November 1st
+            let count = 0;
+            while (date.getUTCMonth() === 10) {
+                if (date.getUTCDay() === 4) { // 4 = Thursday
+                    count++;
+                    if (count === 4) return date;
                 }
+                date.setUTCDate(date.getUTCDate() + 1);
+            }
+            return null;
+        };
+        const thanksgivingDay = getFourthThursday(year);
+        if (thanksgivingDay) holidays.add(formatDate(thanksgivingDay));
+
+        return holidays;
+    };
+
+
+    // ====================================================================
+    // 3. CORE LOGIC
+    // ====================================================================
+    
+    let isProcessing = false;
+
+    /** Fetches a single report from the Cloudflare proxy. */
+    const fetchData = async (reportName) => {
+        log(`|-- Attempting to fetch ${reportName} via Cloudflare Proxy...`);
+        const endpointId = ENDPOINT_MAP[reportName];
+        const url = `${PROXY_URL}?report=${reportName}&id=${endpointId}`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                // Add an arbitrary cache-busting header to force a fresh request through the Worker
+                headers: { 'Cache-Control': 'no-cache', 'X-App-Origin': GITHUB_USERNAME }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                log(`!! LIVE DATA FETCH FAILED for ${reportName}. Status: ${response.status}`, true);
+                log(`   RAW PROXY RESPONSE (Start): ${errorText.substring(0, 150)}... (End)`, true);
+                throw new Error(`Proxy error: ${response.status} - ${errorText.substring(0, 50)}`);
             }
             
-            // --- Mock Data (Updated to span Labor Day 2025 for testing) ---
-            const mockTimeData = [
-                // Date: 2025-08-30 (Saturday) -> Calculated Week Ending: 2025-08-30. Start of range for test
-                { "Employee ID": "E1001", "Employee Name": "Alice Smith", "Task Name": "Regular Hours for Project", "Raw Pay Code": "Project X - REG", "Raw Department Name": "IT Department - CODE", "Raw Location Name": "Osage Beach", "Hours Logged": 8.0, "Date": "2025-08-30" }, 
-                // Date: 2025-08-31 (Sunday) -> Calculated Week Ending: 2025-09-06
-                { "Employee ID": "E1002", "Employee Name": "Bob Johnson", "Task Name": "Admin Time", "Raw Pay Code": "Admin - REG", "Raw Department Name": "HR General - ADM", "Raw Location Name": "Columbia", "Hours Logged": 7.5, "Date": "2025-08-31" }, 
-                // Date: 2025-09-01 (Labor Day Monday - Should trigger alert) -> Calculated Week Ending: 2025-09-06
-                { "Employee ID": "E1001", "Employee Name": "Alice Smith", "Task Name": "Holiday PTO", "Raw Pay Code": "Holiday - HOL", "Raw Department Name": "IT Department - CODE", "Raw Location Name": "Osage Beach", "Hours Logged": 8.0, "Date": "2025-09-01" }, 
-                // Date: 2025-09-02 (Tuesday) -> Calculated Week Ending: 2025-09-06
-                { "Employee ID": "E1003", "Employee Name": "Charlie Brown", "Task Name": "Training Session", "Raw Pay Code": "Training - REG", "Raw Department Name": "Sales - S1", "Raw Location Name": "Columbia", "Hours Logged": 4.0, "Date": "2025-09-02" }, 
-                // Date: 2025-09-05 (Friday) -> Calculated Week Ending: 2025-09-06. End of range for test
-                { "Employee ID": "E1004", "Employee Name": "Dana White", "Task Name": "Client Meeting", "Raw Pay Code": "Project Z - REG", "Raw Department Name": "Marketing - MRK", "Raw Location Name": "Osage Beach", "Hours Logged": 8.0, "Date": "2025-09-05" }, 
-            ];
-
-            // Report 2 (Employee Mapping) is only kept for structure validation but not used for pay code extraction now.
-            const mockEmployeeData = [
-                { "Employee ID": "E1001", "Pay Rate Type": "Hourly", "Base Pay Code": "REG", "Overtime Pay Code": "OT1", "PTO Pay Code": "PTO" },
-                { "Employee ID": "E1002", "Pay Rate Type": "Hourly", "Base Pay Code": "REG", "Overtime Pay Code": "OT1", "PTO Pay Code": "PTO" },
-                { "Employee ID": "E1003", "Pay Rate Type": "Salary", "Base Pay Code": "SAL", "Overtime Pay Code": "NA", "PTO Pay Code": "PTO" },
-                { "Employee ID": "E1004", "Pay Rate Type": "Hourly", "Base Pay Code": "REG", "Overtime Pay Code": "OT1", "PTO Pay Code": "PTO" }
-            ];
-
-            // --- Core Transformation Function ---
-
-            /**
-             * The ETL function: Extracts, Transforms, and prepares data for payroll.
-             * @param {Array<Object>} timeEntries - Data from Report 1 (Time Entry)
-             * @returns {Array<Object>} The final transformed data array, with Date/Week/Location/Department calculated.
-             */
-            const transformData = (timeEntries) => {
-                log("--- Transformation Step 1: Processing Time Entries and Calculating Codes/Dates ---");
-                log("Confirmed payroll week ends on Saturday. Calculating 'Week' field based on entry 'Date'.");
-
-                const processedEntries = timeEntries.map(entry => {
-                    const rawLocation = (entry["Raw Location Name"] || '').toUpperCase();
-                    const locationCode = LOCATION_MAP[rawLocation] || 'UNKNOWN';
-
-                    if (locationCode === 'UNKNOWN') {
-                        log(`Warning: Unknown location "${entry["Raw Location Name"]}" for ID ${entry["Employee ID"]}. Using "UNKNOWN".`, 'error');
-                    }
-
-                    // New logic: Pay Code and Department are extracted from raw strings
-                    const payCode = extractCode(entry["Raw Pay Code"] || '');
-                    const department = extractCode(entry["Raw Department Name"] || '');
-                    const hours = parseFloat(entry["Hours Logged"]) || 0;
-                    
-                    // Ensure pay code and department were successfully extracted/present
-                    if (!payCode || !department) {
-                        log(`Warning: Failed to extract Pay Code or Department for ID ${entry["Employee ID"]}. Pay Code: "${payCode}", Dept: "${department}". Skipping entry.`, 'error');
-                        return null; // Skip entries missing codes
-                    }
-                    
-                    const weekEnding = getWeekEndingDate(entry.Date);
-
-                    if (!weekEnding) {
-                         log(`Warning: Could not calculate Week Ending Date for ID ${entry["Employee ID"]} on ${entry.Date}. Skipping entry.`, 'error');
-                         return null; // Skip entries if date calculation fails
-                    }
-
-
-                    return {
-                        "Employee ID": entry["Employee ID"],
-                        "Employee Name": entry["Employee Name"],
-                        "Pay Code": payCode,
-                        "Hours": hours,
-                        // New mandatory payroll fields:
-                        "Date": formatDate(entry.Date),
-                        "Week": formatDate(weekEnding), // Calculated as the next Saturday
-                        "Location": locationCode,
-                        "Department": department,
-                    };
-                }).filter(entry => entry !== null); // Remove skipped entries
-
-                log(`Successfully processed ${processedEntries.length} entries.`);
-
-                log("--- Transformation Step 2: Grouping Data by All Payroll Fields ---");
-
-                // Group the data by Employee ID, Pay Code, Date, Week, Location, and Department
-                // This is required to match how payroll software expects time entries (one line per employee/paycode/day)
-                
-                // Map key format: EmployeeID|PayCode|Date|Week|Location|Department
-                const groupedPayrollData = new Map(); 
-
-                processedEntries.forEach(entry => {
-                    const groupKey = `${entry["Employee ID"]}|${entry["Pay Code"]}|${entry.Date}|${entry.Week}|${entry.Location}|${entry.Department}`;
-
-                    if (groupedPayrollData.has(groupKey)) {
-                        // Sum hours for existing group (rare, but good for safety)
-                        const existing = groupedPayrollData.get(groupKey);
-                        existing.Hours += entry.Hours;
-                        groupedPayrollData.set(groupKey, existing);
-                    } else {
-                        // Initialize new group (all fields from the processed entry)
-                        groupedPayrollData.set(groupKey, entry);
-                    }
-                });
-                
-                const finalData = Array.from(groupedPayrollData.values());
-
-                log("--- Transformation Step 3: Final Payroll Structure ---");
-                // Show a preview of the transformed data in the log
-                log("Final Transformed Data Preview (First 5 Rows):", 'info');
-                finalData.slice(0, 5).forEach(row => {
-                    log(`  ID: ${row["Employee ID"]}, Code: ${row["Pay Code"]}, Date: ${row.Date}, Week: ${row.Week}, Loc: ${row.Location}, Dept: ${row.Department}, Hours: ${row.Hours.toFixed(2)}`);
-                });
-                log(`Total unique payroll entries generated: ${finalData.length}`);
-
-                return finalData;
-            };
-
-
-            // --- Output CSV Generation Function ---
-
-            /**
-             * Converts an array of objects to a CSV string and triggers a download.
-             * @param {Array<Object>} data - The data to convert.
-             * @param {string} filename - The desired file name.
-             */
-            const downloadCSV = (data, filename) => {
-                if (data.length === 0) {
-                    log("Cannot download: No transformed data available.", 'error');
-                    return;
-                }
-
-                // Define the header order explicitly for the payroll software
-                const header = ["Employee ID", "Employee Name", "Pay Code", "Hours", "Date", "Week", "Location", "Department"];
-                const csvRows = [];
-
-                // Add Header Row
-                csvRows.push(header.join(','));
-
-                // Add Data Rows
-                for (const row of data) {
-                    const values = header.map(key => {
-                        const value = row[key];
-                        // Ensure values are properly quoted if they contain commas or newlines
-                        const escaped = ('' + value).replace(/"/g, '\\"');
-                        return `"${escaped}"`;
-                    });
-                    csvRows.push(values.join(','));
-                }
-
-                const csvString = csvRows.join('\n');
-                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.setAttribute('href', url);
-                a.setAttribute('download', filename);
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                log(`CSV file "${filename}" generated and download started.`, 'success');
-            };
-
-            // --- Main Execution Logic ---
-
-            let finalPayrollData = [];
-
-            // Function to safely fetch data via the proxy
-            async function fetchData(reportKey, attempt = 1) {
-                
-                // The request hits the worker URL, specifying which report it needs.
-                const proxyEndpoint = `${PROXY_URL}?report=${reportKey}`;
-                log(`Attempting to fetch Report ${reportKey} via proxy: ${proxyEndpoint}`);
-                
-                // Set up a controller for the timeout
-                const controller = new AbortController();
-                const signal = controller.signal;
-                const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-                try {
-                    const response = await fetch(proxyEndpoint, { signal });
-                    clearTimeout(timeoutId);
-
-                    if (response.status === 403) {
-                         // 403 usually means the CORS/Origin check failed on the Worker side
-                         log("Proxy 403 Error: Access denied. Check if the Worker's ALLOWED_ORIGIN matches your GitHub Pages URL.", 'error');
-                         throw new Error("Proxy error (403).");
-                    }
-                    
-                    if (!response.ok) {
-                        const errorBody = await response.text();
-                        // Check if the Worker returned a CORS error (Worker is running, but Striven fetch failed)
-                        if (errorBody.includes('Worker fetch error')) {
-                             log(`Worker Internal Error: The proxy failed to fetch data from the Striven API. Status: ${response.status}.`, 'error');
-                             throw new Error("Worker internal fetch failure.");
-                        }
-                        throw new Error(`Proxy HTTP error! status: ${response.status}. Detail: ${errorBody.slice(0, 100)}...`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    // The Worker returns the data in the same format as the Striven API (with a 'data' property)
-                    if (data && data.data) {
-                        log(`Successfully received data from Report ${reportKey}.`);
-                        return data;
-                    } else {
-                        throw new Error("Proxy returned data, but 'data' property is missing or null.");
-                    }
-
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    if (error.name === 'AbortError') {
-                        log(`Fetch attempt ${attempt} timed out after ${FETCH_TIMEOUT_MS / 1000} seconds.`, 'error');
-                        error.message = 'Request timed out.';
-                    }
-
-                    if (attempt < 3 && !error.message.includes("Worker internal fetch failure")) {
-                        // Implement exponential backoff for network issues or transient Worker issues
-                        const delay = 2 ** attempt * 1000;
-                        log(`Fetch attempt ${attempt} failed. Retrying in ${delay / 1000}s...`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        return fetchData(reportKey, attempt + 1);
-                    }
-                    
-                    log(`Final Fetch failed for Report ${reportKey}: ${error.message}.`, 'error');
-                    throw new Error("Proxy or Network error. Using mock data for demonstration.");
-                }
+            // The API returns the data array inside a wrapper object.
+            const jsonResponse = await response.json(); 
+            
+            // FINAL FIX: Extract the actual data from the 'data' array wrapper
+            if (jsonResponse && Array.isArray(jsonResponse.data)) {
+                log(`|-- Successfully retrieved LIVE DATA for ${reportName}. Records found: ${jsonResponse.data.length}`);
+                return jsonResponse.data;
+            } else {
+                log(`!! LIVE DATA FETCH FAILED for ${reportName}: Invalid JSON structure. Missing 'data' array.`, true);
+                throw new Error("Invalid API response structure.");
             }
 
-            async function processData() {
-                const button = document.getElementById('processButton');
-                const spinner = document.getElementById('spinner');
-                const logElement = document.getElementById('log');
-                const downloadArea = document.getElementById('downloadArea');
-                const githubUrl = `https://${GITHUB_USERNAME.toLowerCase()}.github.io`;
-                
-                // Update proxy alert with live info FIRST
-                document.getElementById('proxy-alert').innerHTML = `**Worker's ALLOWED\_ORIGIN must be set to:** <code class="font-bold">${githubUrl}</code>. App is using proxy: <code class="font-bold">${PROXY_URL}</code>`;
+        } catch (error) {
+            log(`!! Final Fetch failed for ${reportName}. Proxy/Network Error: ${error.message}`, true);
+            log(`!! IMPORTANT: Using MOCK DATA for demonstration. Deployment requires a working proxy.`, true);
+            
+            // --- MOCK DATA BLOCK (Only runs if API call fails) ---
+            if (reportName === 'report1') {
+                return [
+                    // Time Entry Data - Including dates around Labor Day 2025 (Sept 1st)
+                    { "Name": "Alice Smith", "Date": "09/01/2025", "Task": "Project X - PTO", "EEID": "A123", "PayCode": "PTO", "Hours": 8.0, "Location": "Columbia", "Department": "Office Task - OFC" },
+                    { "Name": "Alice Smith", "Date": "09/02/2025", "Task": "Project Y - REG", "EEID": "A123", "PayCode": "REG", "Hours": 6.0, "Location": "Columbia", "Department": "General Install - SVG" },
+                    { "Name": "Alice Smith", "Date": "09/03/2025", "Task": "Project Y - OT1", "EEID": "A123", "PayCode": "OT1", "Hours": 2.0, "Location": "Columbia", "Department": "General Install - SVG" },
+                    { "Name": "Bob Johnson", "Date": "09/05/2025", "Task": "Client Z - REG", "EEID": "B456", "PayCode": "REG", "Hours": 8.0, "Location": "Osage Beach", "Department": "Warehouse - WH" },
+                    { "Name": "Bob Johnson", "Date": "09/07/2025", "Task": "Client Z - REG", "EEID": "B456", "PayCode": "REG", "Hours": 4.0, "Location": "Osage Beach", "Department": "Warehouse - WH" },
+                    { "Name": "Charlie Brown", "Date": "09/10/2025", "Task": "Vacation Pay - VAC", "EEID": "C789", "PayCode": "PTO", "Hours": 8.0, "Location": "Columbia", "Department": "Service Dept - SVS" },
+                ];
+            } else {
+                return [
+                    // Employee Details - Mock Data
+                    { "Employee ID": "A123", "Base Pay Code": "REGULAR", "Overtime Pay Code": "OT1", "PTO Pay Code": "PTO" },
+                    { "Employee ID": "B456", "Base Pay Code": "REGULAR", "Overtime Pay Code": "OT2", "PTO Pay Code": "VAC" },
+                    { "Employee ID": "C789", "Base Pay Code": "REGULAR", "Overtime Pay Code": "OT1", "PTO Pay Code": "VAC" }
+                ];
+            }
+            // --- MOCK DATA BLOCK END ---
+        }
+    };
 
+    /** Transforms raw report data into aggregated payroll structure. */
+    const transformData = (timeEntries) => {
+        log(`|-- Starting data aggregation and transformation...`);
 
-                // Reset state
-                logElement.innerHTML = '';
-                downloadArea.classList.add('hidden');
-                button.disabled = true;
-                spinner.classList.remove('hidden');
-                log(`Process started at ${new Date().toLocaleTimeString()}...`);
-                
-                let report1Data = null;
-                let report2Data = null;
+        const payrollDataMap = new Map(); // Key: EEID_PayCode, Value: { EEID, PayCode, Hours }
+        let earliestDate = null;
+        let latestDate = null;
+        
+        timeEntries.forEach(entry => {
+            const eeid = entry.EEID || 'UNKNOWN';
+            const rawLocation = entry.Location || 'UNKNOWN';
+            const rawDepartment = entry.Department || 'UNKNOWN';
+            const hours = parseFloat(entry.Hours) || 0.0;
+            const dateObj = new Date(entry.Date);
+            const rawDate = entry.Date;
 
-                // Step 1: Data Extraction (Using Proxy)
-                try {
-                    // Attempt to fetch live data via the proxy
-                    report1Data = (await fetchData('report1')).data;
-                    report2Data = (await fetchData('report2')).data;
-                    log(`LIVE DATA retrieved. ${report1Data.length} time entries found.`);
-
-                } catch (error) {
-                    // If fetch fails, fall back to mock data
-                    log(error.message, 'error');
-                    log("--- FALLBACK: Using MOCK DATA for transformation logic demonstration. ---");
-                    report1Data = mockTimeData;
-                    report2Data = mockEmployeeData; // Report 2 data is technically optional with the new logic, but kept for consistency
-                    log(`MOCK DATA loaded. ${report1Data.length} time entries found.`);
-                }
-
-                // Step 1.5: Holiday Check
-                if (report1Data && report1Data.length > 0) {
-                    checkHolidays(report1Data);
-                } else {
-                    log("Cannot check for holidays: No time entry data available.", 'error');
-                }
-
-
-                // Step 2: Data Transformation (ETL)
-                try {
-                    log("--- Starting Data Transformation (ETL) ---");
-                    finalPayrollData = transformData(report1Data);
-
-                    // Step 3: Load/Generate Output
-                    if (finalPayrollData.length > 0) {
-                        downloadArea.classList.remove('hidden');
-                        document.getElementById('downloadButton').onclick = () => {
-                            const dateString = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-                            downloadCSV(finalPayrollData, `payroll_upload_${dateString}.csv`);
-                        };
-                        log("Processing successful. Payroll file is ready for download.", 'success');
-                        log(`Please verify the accuracy of the ${finalPayrollData.length} records before upload.`);
-                    } else {
-                        log("Transformation completed, but no records were generated. Check raw data and required fields (Date, Pay Code, Department).", 'error');
-                    }
-
-                } catch (error) {
-                    log(`An unexpected error occurred during transformation: ${error.message}`, 'error');
-                } finally {
-                    button.disabled = false;
-                    spinner.classList.add('hidden');
-                }
+            if (isNaN(dateObj)) {
+                log(`Warning: Skipping record for EEID ${eeid} due to invalid date: ${rawDate}.`, true);
+                return;
             }
 
-            // Attach event listener to the main button
-            document.addEventListener('DOMContentLoaded', () => {
-                const button = document.getElementById('processButton');
-                // Use a simple function call in the event listener to avoid global scope issues
-                button.addEventListener('click', processData); 
-                console.log("INFO: DOMContentLoaded fired. Event listener attached to processButton.");
+            // Track date range and year for holiday check
+            if (!earliestDate || dateObj < earliestDate) earliestDate = dateObj;
+            if (!latestDate || dateObj > latestDate) latestDate = dateObj;
+
+            // 1. Determine Pay Code and Department Code (Extract all-caps at end)
+            const payCode = extractCode(entry.PayCode, 'PayCode'); // Should be REG, PTO, VAC, OT1, etc.
+            const departmentCode = extractCode(rawDepartment, 'Department'); 
+            
+            // 2. Determine Location Code
+            const locationCode = LOCATION_MAP[rawLocation] || log(`Warning: Unknown location "${rawLocation}" for EEID ${eeid}. Using 'NA'.`, true) || 'NA';
+
+            // 3. Determine Week Ending Date (Next Saturday)
+            const weekEndingDate = calculateWeekEndingDate(rawDate);
+            
+            // 4. Determine Date in MMDDYYYY format
+            const formattedDate = formatDate(rawDate);
+
+            // 5. Aggregate
+            const key = `${eeid}_${payCode}_${locationCode}_${departmentCode}_${weekEndingDate}`; // Week ending date is needed for aggregation uniqueness
+            
+            const existingEntry = payrollDataMap.get(key);
+
+            const newEntry = {
+                'EEID': eeid,
+                'Location': locationCode,
+                'Week': weekEndingDate,
+                'Date': formattedDate,
+                'PayCode': payCode,
+                'Department': departmentCode,
+                'Hours': (existingEntry ? existingEntry.Hours : 0) + hours
+            };
+            
+            payrollDataMap.set(key, newEntry);
+        });
+
+        // 6. Check Holidays (Only if dates were found)
+        if (earliestDate && latestDate) {
+            const startYear = earliestDate.getUTCFullYear();
+            const endYear = latestDate.getUTCFullYear();
+            
+            const holidayDates = new Set();
+            for (let year = startYear; year <= endYear; year++) {
+                getHolidays(year).forEach(date => holidayDates.add(date));
+            }
+
+            let dateCursor = new Date(earliestDate);
+            while (dateCursor <= latestDate) {
+                const dateStr = formatDate(dateCursor);
+                if (holidayDates.has(dateStr)) {
+                    log(`⚠️ PAID HOLIDAY ALERT: ${new Date(dateCursor.getTime()).toDateString()} falls within the pay period.`, true);
+                }
+                dateCursor.setUTCDate(dateCursor.getUTCDate() + 1);
+            }
+        }
+        
+        const finalPayrollData = Array.from(payrollDataMap.values()).map(data => ({
+            // Reorder columns for final output consistency (based on typical payroll file structure)
+            'EEID': data.EEID,
+            'Location': data.Location,
+            'Week': data.Week,
+            'Date': data.Date,
+            'PayCode': data.PayCode,
+            'Department': data.Department,
+            'Hours': data.Hours.toFixed(2) // Format hours to 2 decimal places
+        }));
+
+        log(`|-- Aggregation complete. Total unique pay entries generated: ${finalPayrollData.length}`);
+        log(`|-- Payroll Data Preview (EEID, Location, PayCode, Hours):`);
+        finalPayrollData.slice(0, 5).forEach(entry => {
+            log(`    - ${entry.EEID}, ${entry.Location}, ${entry.PayCode}, ${entry.Hours}`);
+        });
+
+        return finalPayrollData;
+    };
+
+
+    /** Converts the final JSON data array into a CSV string. */
+    const convertToCSV = (data) => {
+        if (data.length === 0) return '';
+
+        const headers = Object.keys(data[0]);
+        const csvRows = [];
+
+        // 1. Headers (Use the headers from the final structure)
+        csvRows.push(headers.join(','));
+
+        // 2. Data
+        data.forEach(row => {
+            const values = headers.map(header => {
+                const escaped = ('' + row[header]).replace(/"/g, '\\"');
+                // Ensure values containing commas or newlines are wrapped in quotes
+                if (escaped.includes(',') || escaped.includes('\n')) {
+                    return `"${escaped}"`;
+                }
+                return escaped;
             });
-        })(); // IIFE ends here
-    </script>
+            csvRows.push(values.join(','));
+        });
+
+        return csvRows.join('\n');
+    };
+
+    /** Handles the entire ETL process on button click. */
+    const processData = async () => {
+        if (isProcessing) return;
+        isProcessing = true;
+        
+        // UI State: Disable button, show spinner
+        document.getElementById('buttonText').textContent = 'Processing...';
+        document.getElementById('loadingSpinner').classList.remove('hidden');
+        document.getElementById('processButton').disabled = true;
+        document.getElementById('downloadArea').classList.add('hidden');
+        document.getElementById('logContainer').innerHTML = ''; // Clear log
+
+        log('--- STARTING PAYROLL PROCESS ---');
+
+        try {
+            // 1. Fetch data from the two required sources via the Worker proxy
+            const timeEntryData = await fetchData('report1');
+            const employeeDetails = await fetchData('report2'); 
+            
+            // Note: employeeDetails is currently not used in the transformation but is fetched to confirm connectivity.
+            
+            // Ensure data arrays are present and not empty
+            if (!timeEntryData || timeEntryData.length === 0) {
+                log('!! ERROR: Time Entry data source returned zero records. Aborting.', true);
+                throw new Error("No time entry data found.");
+            }
+
+            // 2. Transform and Aggregate
+            const finalData = transformData(timeEntryData);
+
+            // 3. Generate CSV
+            const csvContent = convertToCSV(finalData);
+
+            // 4. Create and trigger download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const downloadButton = document.getElementById('downloadCSV');
+            downloadButton.href = url;
+            downloadButton.download = `payroll_upload_${formatDate(new Date())}.csv`;
+            
+            document.getElementById('downloadArea').classList.remove('hidden');
+            log('--- PROCESS COMPLETE ---');
+            
+        } catch (e) {
+            log(`!! FATAL ERROR during processing: ${e.message}`, true);
+        } finally {
+            isProcessing = false;
+            document.getElementById('buttonText').textContent = 'Process Data and Generate Payroll File';
+            document.getElementById('loadingSpinner').classList.add('hidden');
+            document.getElementById('processButton').disabled = false;
+        }
+    };
+    
+    // ====================================================================
+    // 4. INITIALIZATION AND EVENT LISTENERS
+    // ====================================================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set proxy status alert on load
+        const proxyAlert = document.getElementById('proxy-alert');
+        proxyAlert.innerHTML = `**Worker's ALLOWED_ORIGIN:** <code>https://${GITHUB_USERNAME}.github.io</code> | **PROXY_URL:** <code>${PROXY_URL}</code>`;
+        proxyAlert.classList.remove('hidden');
+
+        // Attach event listener to the button
+        const processButton = document.getElementById('processButton');
+        processButton.addEventListener('click', processData);
+        log('INFO: DOMContentLoaded fired. Event listener attached to processButton.');
+    });
+
+</script>
 </body>
 </html>

@@ -504,6 +504,11 @@
                 const spinner = document.getElementById('spinner');
                 const logElement = document.getElementById('log');
                 const downloadArea = document.getElementById('downloadArea');
+                const githubUrl = `https://${GITHUB_USERNAME.toLowerCase()}.github.io`;
+                
+                // Update proxy alert with live info FIRST
+                document.getElementById('proxy-alert').innerHTML = `**Worker's ALLOWED\_ORIGIN must be set to:** <code class="font-bold">${githubUrl}</code>. App is using proxy: <code class="font-bold">${PROXY_URL}</code>`;
+
 
                 // Reset state
                 logElement.innerHTML = '';
@@ -512,10 +517,6 @@
                 spinner.classList.remove('hidden');
                 log(`Process started at ${new Date().toLocaleTimeString()}...`);
                 
-                // Display the GitHub Pages URL used for Worker security reference
-                const githubUrl = `https://${GITHUB_USERNAME.toLowerCase()}.github.io`;
-                document.getElementById('proxy-alert').innerHTML = `**Worker's ALLOWED\_ORIGIN must be set to:** <code class="font-bold">${githubUrl}</code>. App is using proxy: <code class="font-bold">${PROXY_URL}</code>`;
-
                 let report1Data = null;
                 let report2Data = null;
 

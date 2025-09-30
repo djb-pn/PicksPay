@@ -44,7 +44,7 @@
         </div>
 
         <!-- Execution Log & Evidence -->
-        <h2 class="text-xl font-bold text-indigo-800 mt-8 mb-4">Execution Log & Evidence</h2>
+        <h2 class="text-xl font-bold text-indigo-800 mt-8 mb-4">Execution Log & Evidence </h2>
         <div id="logContainer" class="bg-gray-50 p-4 border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
             <p class="text-gray-500">Log empty. Click 'Process Data' to begin...</p>
         </div>
@@ -64,7 +64,7 @@
 
     const ENDPOINT_MAP = {
         'report1': 'mMSZsQF0CyRyRAnpnULyr8CwAeqL9CSBy0YWVJTSgMChnr0eafiiI6d5r2L1mB6sPtAMjT78oocfUmN0Io0w', // Time Entry Data
-        'report2': '4N9G5m5Ss0sZP9A4Fx1eZzuqdQbztB5GqU0A4UalE5xRUDrjQDIOzAlhhJoEX9t8TvucFT5GmRJB0bic8VwQ'  // PTO/Pay Code Details (Currently mocked)
+        'report2': '4N9G5m5Ss0sZP9A4Fx1eZzuqdQbztB5GqU0A4UalE5xRUDrjQDIOzAlhhJoEX9t8TvucFT5GmRJB0bic8VwQ'  // PTO/Pay Code Details
     };
 
     const LOCATION_MAP = {
@@ -113,6 +113,7 @@
     const extractCode = (rawText, fieldName) => {
         if (!rawText) return log(`Warning: ${fieldName} is null/empty. Using 'NA'.`, true) || 'NA';
         
+        // Regex looks for ' - ' followed by one or more ALL-CAPS/numeric characters at the end of the string.
         const match = rawText.match(/\s-\s([A-Z0-9]+)$/);
         if (match && match[1]) {
             return match[1];
@@ -224,12 +225,16 @@
                 throw new Error(`Proxy error: ${response.status} - ${errorText.substring(0, 50)}`);
             }
             
-            // FIX: CRITICAL ADDITION: Parse the response body as JSON
+            // Parse the response body as JSON
             const jsonResponse = await response.json();
 
             // Check if the response structure is valid (expecting { data: [...] })
             if (jsonResponse && Array.isArray(jsonResponse.data)) {
-                log(`|-- Successfully retrieved LIVE DATA for ${reportName}. Records found: ${jsonResponse.data.length}`);
+                if (jsonResponse.data.length === 0) {
+                    log(`!! LIVE DATA retrieved for ${reportName} but it contained 0 records.`, true);
+                } else {
+                    log(`|-- Successfully retrieved LIVE DATA for ${reportName}. Records found: ${jsonResponse.data.length}`);
+                }
                 return jsonResponse.data;
             } else {
                 log(`!! LIVE DATA FETCH FAILED for ${reportName}: Invalid JSON structure. Missing 'data' array.`, true);
@@ -238,28 +243,9 @@
 
         } catch (error) {
             log(`!! Final Fetch failed for ${reportName}. Proxy/Network Error: ${error.message}`, true);
-            log(`!! IMPORTANT: Using MOCK DATA for demonstration. Deployment requires a working proxy.`, true);
-            
-            // --- MOCK DATA BLOCK (Only runs if API call fails) ---
-            if (reportName === 'report1') {
-                return [
-                    // Time Entry Data - Including dates around Labor Day 2025 (Sept 1st)
-                    { "Name": "Alice Smith", "Date": "09/01/2025", "Task": "Project X - PTO", "EEID": "A123", "PayCode": "PTO", "Hours": 8.0, "Location": "Columbia", "Department": "Office Task - OFC" },
-                    { "Name": "Alice Smith", "Date": "09/02/2025", "Task": "Project Y - REG", "EEID": "A123", "PayCode": "REG", "Hours": 6.0, "Location": "Columbia", "Department": "General Install - SVG" },
-                    { "Name": "Alice Smith", "Date": "09/03/2025", "Task": "Project Y - OT1", "EEID": "A123", "PayCode": "OT1", "Hours": 2.0, "Location": "Columbia", "Department": "General Install - SVG" },
-                    { "Name": "Bob Johnson", "Date": "09/05/2025", "Task": "Client Z - REG", "EEID": "B456", "PayCode": "REG", "Hours": 8.0, "Location": "Osage Beach", "Department": "Warehouse - WH" },
-                    { "Name": "Bob Johnson", "Date": "09/07/2025", "Task": "Client Z - REG", "EEID": "B456", "PayCode": "REG", "Hours": 4.0, "Location": "Osage Beach", "Department": "Warehouse - WH" },
-                    { "Name": "Charlie Brown", "Date": "09/10/2025", "Task": "Vacation Pay - VAC", "EEID": "C789", "PayCode": "PTO", "Hours": 8.0, "Location": "Columbia", "Department": "Service Dept - SVS" },
-                ];
-            } else {
-                return [
-                    // Employee Details - Mock Data
-                    { "Employee ID": "A123", "Base Pay Code": "REGULAR", "Overtime Pay Code": "OT1", "PTO Pay Code": "PTO" },
-                    { "Employee ID": "B456", "Base Pay Code": "REGULAR", "Overtime Pay Code": "OT2", "PTO Pay Code": "VAC" },
-                    { "Employee ID": "C789", "Base Pay Code": "REGULAR", "Overtime Pay Code": "OT1", "PTO Pay Code": "VAC" }
-                ];
-            }
-            // --- MOCK DATA BLOCK END ---
+            
+            // Stop the process and provide a helpful error message since mock data is removed
+            throw new Error(`Data acquisition failed for ${reportName}. Please ensure the PROXY_URL is correct, the Worker is deployed, and it allows cross-origin requests from this site.`);
         }
     };
 
@@ -288,8 +274,9 @@
             if (!earliestDate || dateObj < earliestDate) earliestDate = dateObj;
             if (!latestDate || dateObj > latestDate) latestDate = dateObj;
 
-            // 1. Determine Pay Code and Department Code (Extract all-caps at end)
-            const payCode = extractCode(entry.PayCode, 'PayCode'); // Should be REG, PTO, VAC, OT1, etc.
+            // 1. Determine Pay Code and Department Code
+            // REVERTED: Apply extractCode to entry.PayCode to get the last all-caps word.
+            const payCode = extractCode(entry.PayCode, 'PayCode'); 
             const departmentCode = extractCode(rawDepartment, 'Department'); 
             
             // 2. Determine Location Code
@@ -403,14 +390,12 @@
         try {
             // 1. Fetch data from the two required sources via the Worker proxy
             const timeEntryData = await fetchData('report1');
-            const employeeDetails = await fetchData('report2'); 
-            
-            // Note: employeeDetails is currently not used in the transformation but is fetched to confirm connectivity.
-            
+            await fetchData('report2'); // Fetch but don't use yet.
+
             // Ensure data arrays are present and not empty
             if (!timeEntryData || timeEntryData.length === 0) {
                 log('!! ERROR: Time Entry data source returned zero records. Aborting.', true);
-                throw new Error("No time entry data found.");
+                throw new Error("No time entry data found. Cannot proceed with payroll.");
             }
 
             // 2. Transform and Aggregate
@@ -431,6 +416,7 @@
             log('--- PROCESS COMPLETE ---');
             
         } catch (e) {
+            // Catch the error thrown from fetchData or the 0-record check
             log(`!! FATAL ERROR during processing: ${e.message}`, true);
         } finally {
             isProcessing = false;
@@ -460,10 +446,10 @@
         if (downloadButton && downloadButton.tagName !== 'A') {
             console.error("Download element is not an anchor tag. Correcting its structure for download functionality.");
             // Quick fix for download button being a <button> instead of <a>
-            // I've converted this to an <a> tag with class styling in the HTML above.
         }
     });
 
 </script>
 </body>
 </html>
+

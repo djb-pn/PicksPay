@@ -214,8 +214,8 @@
         try {
             const response = await fetch(url, {
                 method: 'GET',
-                // Add an arbitrary cache-busting header to force a fresh request through the Worker
-                headers: { 'Cache-Control': 'no-cache', 'X-App-Origin': GITHUB_USERNAME }
+                // Removed X-App-Origin header since running from the correct origin (GitHub Pages)
+                headers: { 'Cache-Control': 'no-cache' }
             });
 
             if (!response.ok) {
@@ -242,10 +242,12 @@
             }
 
         } catch (error) {
+            // NOTE: The hard "Failed to fetch" usually indicates a CORS/network block before
+            // the response status could even be read, OR a fundamental URL/DNS failure.
             log(`!! Final Fetch failed for ${reportName}. Proxy/Network Error: ${error.message}`, true);
             
-            // Stop the process and provide a helpful error message since mock data is removed
-            throw new Error(`Data acquisition failed for ${reportName}. Please ensure the PROXY_URL is correct, the Worker is deployed, and it allows cross-origin requests from this site.`);
+            // Provide a focused error message.
+            throw new Error(`Data acquisition failed for ${reportName}. Please ensure the PROXY_URL ("${PROXY_URL}") is exactly correct and the Cloudflare Worker is properly deployed and running.`);
         }
     };
 
@@ -433,7 +435,8 @@
     document.addEventListener('DOMContentLoaded', () => {
         // Set proxy status alert on load
         const proxyAlert = document.getElementById('proxy-alert');
-        proxyAlert.innerHTML = `**Worker's ALLOWED_ORIGIN:** <code>https://${GITHUB_USERNAME}.github.io</code> | **PROXY_URL:** <code>${PROXY_URL}</code>`;
+        // Updated alert message to reflect the origin being used.
+        proxyAlert.innerHTML = `**Worker's Expected Origin:** <code>https://${GITHUB_USERNAME}.github.io</code> | **PROXY_URL:** <code>${PROXY_URL}</code>. <span class="font-bold">If running on GitHub Pages, verify this URL.</span>`;
         proxyAlert.classList.remove('hidden');
 
         // Attach event listener to the button
@@ -452,5 +455,3 @@
 </script>
 </body>
 </html>
-
-

@@ -10,11 +10,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
         .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #e0e0e0; }
-        /* Use lighter colors for log text on dark mode for consistency */
-        .log-entry.text-red-700 { color: #f87171; } /* Light red */
-        .log-entry.text-gray-800 { color: #ffffff; } /* White text for contrast */
-        .log-entry .text-gray-400 { color: #a0a0a0; } /* Lighter gray for timestamp */
-
+        
         /* Define custom brand colors: Primary Accent #670000, Structure #595959, White #FFFFFF */
         .bg-picks-red { background-color: #670000; }
         .hover\:bg-picks-red-dark:hover { background-color: #4C0000; }
@@ -22,6 +18,14 @@
         .text-picks-dark-gray { color: #595959; }
         .bg-picks-structure { background-color: #595959; }
         .border-picks-structure-light { border-color: #A0A0A0; }
+
+        /* Log text colors (ensuring white text on dark background) */
+        .log-entry.text-red-700 { color: #f87171; } /* Light red for error details */
+        .log-entry.text-gray-800 { color: #ffffff; } /* White text for standard logs */
+        .log-entry .text-gray-400 { color: #a0a0a0; } /* Lighter gray for timestamp */
+
+        /* Override Tailwind's default gray text color in the log for better contrast */
+        #logContainer p.text-gray-400 { color: #a0a0a0 !important; }
     </style>
 </head>
 <body>
@@ -30,23 +34,23 @@
     <!-- Main content card with rounded corners -->
     <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl">
 
-        <!-- Header Section: Dark Gray Background (#595959) to blend with logo -->
-        <div class="bg-picks-structure p-6 sm:p-10 rounded-t-2xl">
+        <!-- Header Section: WHITE Background to match logo's black text/image -->
+        <div class="bg-white p-6 sm:p-10 rounded-t-2xl border-b border-gray-200">
             <!-- Logo: Corrected path for GitHub Pages deployment -->
             <img src="26264_Picks-Gallery.png" alt="Picks Gallery Logo" class="mb-4 w-48 h-auto">
 
-            <h1 class="text-3xl font-extrabold text-white mb-2">Picks Payroll Data Processor</h1>
-            <p class="text-gray-300 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
+            <h1 class="text-3xl font-extrabold text-picks-dark-gray mb-2">Picks Payroll Data Processor</h1>
+            <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
 
-            <!-- Proxy Status Alert (Initial State/Failure) - Dark background, light text -->
-            <div id="proxy-alert" class="bg-gray-800 border-l-4 border-yellow-400 text-yellow-300 p-4 rounded-lg mb-6 hidden" role="alert">
+            <!-- Proxy Status Alert (Initial State/Failure) - Dark Gray Background, light text -->
+            <div id="proxy-alert" class="bg-picks-structure border-l-4 border-yellow-400 text-white p-4 rounded-lg mb-6 hidden" role="alert">
             </div>
         </div>
 
         <!-- Main Body Section: White Background for interaction/readability -->
         <div class="p-6 sm:p-10">
 
-            <!-- Main Action Button (Picks Red color scheme: #670000) -->
+            <!-- Main Action Button (Picks Red color scheme: #670000, White text) -->
             <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-md text-white bg-picks-red hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-picks-red">
                 <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -66,6 +70,7 @@
 
             <!-- Execution Log & Evidence -->
             <h2 class="text-xl font-bold text-picks-dark-gray mt-8 mb-4">Execution Log & Evidence </h2>
+            <!-- Log container now uses a dark gray background for contrast -->
             <div id="logContainer" class="bg-gray-800 p-4 border border-picks-structure-light rounded-lg max-h-96 overflow-y-auto">
                 <p class="text-gray-400">Log empty. Click 'Process Data' to begin...</p>
             </div>

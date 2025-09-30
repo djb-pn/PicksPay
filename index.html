@@ -116,21 +116,20 @@
     const extractCode = (rawText, fieldName) => {
         if (!rawText) return log(`Warning: ${fieldName} is null/empty. Using 'NA'.`, true) || 'NA';
 
-        // Regex to check for ' - ' followed by a code (A-Z, 0-9, or / for O/T) at the end.
-        const complexMatch = rawText.match(/\s-\s([A-Z0-9/]+)$/);
-        
-        if (complexMatch && complexMatch[1]) {
-            // Case 1: Complex description (e.g., "Task Name - SVG")
-            return complexMatch[1];
-        }
-        
-        // Case 2: Simple Code check (e.g., "REG", "PTO", "O/T"). 
-        // If the raw text consists ONLY of all caps, numbers, or slashes, assume it's the code and return it silently.
-        // This stops the unnecessary warnings for clean codes like "REG".
+        // 1. Simple Code Check: If the text is short and contains only uppercase letters, numbers, and /, assume it's already the code.
+        // This is necessary because the previous regex-based check failed for clean codes like "REG".
         if (rawText.match(/^[A-Z0-9/]+$/)) {
             return rawText;
         }
 
+        // 2. Complex Description Check: Look for ' - ' followed by a code (A-Z, 0-9, or / for O/T) at the end.
+        const complexMatch = rawText.match(/\s-\s([A-Z0-9/]+)$/);
+        
+        if (complexMatch && complexMatch[1]) {
+            // Case 2: Complex description (e.g., "Task Name - SVG")
+            return complexMatch[1];
+        }
+        
         // 3. Fallback
         log(`Warning: Could not standardize code for ${fieldName}: "${rawText}". Using 'NA'.`, true);
         return 'NA';

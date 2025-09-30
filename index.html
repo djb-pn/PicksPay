@@ -50,9 +50,9 @@
         <!-- Main Body Section: White Background for interaction/readability -->
         <div class="p-6 sm:p-10">
 
-            <!-- Main Action Button (Picks Red color scheme: #670000, White text) -->
-            <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-md text-white bg-picks-red hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-picks-red">
-                <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <!-- Main Action Button: Static (White/Dark Gray Text), Hover (Red/White Text), Centered -->
+            <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-picks-dark-gray text-base font-medium rounded-xl shadow-md text-picks-dark-gray bg-white hover:text-white hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-white disabled:text-picks-dark-gray">
+                <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-current hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -70,8 +70,8 @@
 
             <!-- Execution Log & Evidence -->
             <h2 class="text-xl font-bold text-picks-dark-gray mt-8 mb-4">Execution Log & Evidence </h2>
-            <!-- Log container now uses a dark gray background for contrast -->
-            <div id="logContainer" class="bg-gray-800 p-4 border border-picks-structure-light rounded-lg max-h-96 overflow-y-auto">
+            <!-- Log container uses brand structure gray (#595959) and white log text for contrast -->
+            <div id="logContainer" class="bg-picks-structure p-4 border border-picks-structure-light rounded-lg max-h-96 overflow-y-auto">
                 <p class="text-gray-400">Log empty. Click 'Process Data' to begin...</p>
             </div>
         </div>

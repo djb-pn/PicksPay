@@ -222,8 +222,13 @@
                 throw new Error(`Proxy error: ${response.status} - ${errorText.substring(0, 50)}`);
             }
             
-            // The API returns the data array inside a wrapper object.
-            const jsonResponse = await response.json(); 
+            // --- CRITICAL SECTION REPLACEMENT ---
+    if (jsonResponse && Array.isArray(jsonResponse.data)) {
+        logMessage(`LIVE DATA retrieved from ${reportName}. Total records: ${jsonResponse.data.length}.`, 'success');
+        return jsonResponse.data;
+    } else {
+        throw new Error(`API data format invalid for ${reportName}. Received unexpected structure.`);
+    }
             
             // FINAL FIX: Extract the actual data from the 'data' array wrapper
             if (jsonResponse && Array.isArray(jsonResponse.data)) {
@@ -457,3 +462,4 @@
 </script>
 </body>
 </html>
+

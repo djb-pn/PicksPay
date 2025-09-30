@@ -60,7 +60,7 @@
             </div>
             
             <div id="visualReportArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
-                <h2 class="text-xl font-bold text-picks-dark-gray mb-4">Payroll Summary Report</h2>
+                <h2 class="text-xl font-bold text-picks-dark-gray mb-4">Payroll Summary Report (Aggregated by Week)</h2>
                 <div class="bg-gray-50 p-4 border rounded-lg max-h-96 overflow-y-auto">
                     <table id="payrollReportTable" class="min-w-full divide-y divide-gray-300">
                         <tbody class="divide-y divide-gray-200" id="reportBody">
@@ -326,7 +326,6 @@
             let effectiveDepartment = rawDepartment;
             if (entry.source === 'pto') {
                 effectiveDepartment = 'OFFICE';
-                // Note: Skipping log here for brevity, assuming this is an expected standard rule
             } else if (!effectiveDepartment) {
                  // Fallback if the time entry report is missing the department for some reason
                  effectiveDepartment = 'UNKNOWN';
@@ -441,8 +440,45 @@
         return csvRows.join('\n');
     };
     
+    /** Aggregates data for the visual summary report (EEID, Date, Total Hours). */
+    const aggregateForReport = (detailedData) => {
+        const summaryMap = new Map(); // Key: EEID_Week, Value: { Name, EEID, Date, TotalHours }
+
+        detailedData.forEach(entry => {
+            const key = `${entry.EEID}_${entry.Date}`; // Aggregating by EEID and Week Ending Date
+            // parseFloat is required because the Hours column is already a string ('X.XX')
+            const hours = parseFloat(entry.Hours);
+
+            if (summaryMap.has(key)) {
+                const existing = summaryMap.get(key);
+                existing.TotalHours += hours;
+            } else {
+                summaryMap.set(key, {
+                    Name: entry.Name,
+                    EEID: entry.EEID,
+                    Date: entry.Date,
+                    TotalHours: hours
+                });
+            }
+        });
+
+        // Convert map values to an array, and sort by Name then Date
+        const aggregated = Array.from(summaryMap.values()).sort((a, b) => {
+            if (a.Name < b.Name) return -1;
+            if (a.Name > b.Name) return 1;
+            return a.Date.localeCompare(b.Date); // Sort by date MMDDYYYY string
+        });
+        
+        // Format hours to 2 decimal places here for the final display
+        return aggregated.map(e => ({
+            ...e,
+            TotalHours: e.TotalHours.toFixed(2)
+        }));
+    };
+
+
     /** Renders the aggregated payroll data to an on-screen table. */
-    const renderSummaryReport = (data) => {
+    const renderSummaryReport = (aggregatedData) => {
         const reportArea = document.getElementById('visualReportArea');
         const tableBody = document.getElementById('reportBody');
         const tableContainer = document.getElementById('payrollReportTable');
@@ -453,21 +489,21 @@
         
         tableBody.innerHTML = ''; // Clear previous data
 
-        if (data.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500">No data records were generated.</td></tr>';
+        // Adjust colspan for the new simpler table (3 columns)
+        if (aggregatedData.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="3" class="p-3 text-center text-gray-500">No data records were generated.</td></tr>';
             reportArea.classList.remove('hidden');
             return;
         }
 
-        // 1. Create Table Header
+        // 1. Create Table Header (Simplified)
         const headerRow = document.createElement('thead');
         headerRow.className = 'bg-gray-200';
         headerRow.innerHTML = `
             <tr>
                 <th class="p-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider rounded-tl-lg">Name (EEID)</th>
                 <th class="p-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date (Week Ending)</th>
-                <th class="p-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pay Code</th>
-                <th class="p-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider rounded-tr-lg">Hours</th>
+                <th class="p-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider rounded-tr-lg">Total Hours</th>
             </tr>
         `;
         // Prepend the new header
@@ -475,15 +511,14 @@
 
 
         // 2. Render Data Rows
-        data.forEach(entry => {
+        aggregatedData.forEach(entry => {
             const row = tableBody.insertRow();
             row.className = 'bg-white hover:bg-gray-100 transition duration-150';
             
             row.innerHTML = `
                 <td class="p-3 text-sm font-medium text-picks-dark-gray whitespace-nowrap">${entry.Name} (<span class="font-mono text-gray-500">${entry.EEID}</span>)</td>
                 <td class="p-3 text-sm text-gray-700 whitespace-nowrap">${entry.Date}</td>
-                <td class="p-3 text-sm text-gray-700 whitespace-nowrap font-mono">${entry.PayCode}</td>
-                <td class="p-3 text-sm text-right font-bold text-green-700 whitespace-nowrap">${entry.Hours}</td>
+                <td class="p-3 text-sm text-right font-bold text-green-700 whitespace-nowrap">${entry.TotalHours}</td>
             `;
         });
 
@@ -523,7 +558,7 @@
                 throw new Error("No payroll data found. Cannot proceed with payroll.");
             }
 
-            // 2. Transform and Aggregate
+            // 2. Transform and Aggregate (Creates the final CSV structure)
             const result = transformData(allTimeEntries, allPtoEntries);
             const finalData = result.data;
             const finalReportDate = result.reportDate;
@@ -539,8 +574,9 @@
             downloadButton.href = url;
             downloadButton.download = `Picks-Payroll-Upload-${finalReportDate}.csv`;
             
-            // 5. Render Visual Report
-            renderSummaryReport(finalData);
+            // 5. Generate and Render Visual Report Summary (Aggregated by EEID/Week)
+            const summaryData = aggregateForReport(finalData);
+            renderSummaryReport(summaryData);
             
             document.getElementById('downloadArea').classList.remove('hidden');
             log('--- PROCESS COMPLETE ---');

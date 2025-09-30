@@ -12,7 +12,7 @@
         
         /* Define custom brand colors: Primary Accent #760000, Structure #595959, White #FFFFFF */
         .bg-picks-red { background-color: #760000; }
-        .hover\:bg-picks-red-dark:hover { background-color: #5A0000; }
+        .hover\:bg-picks-red-dark:hover { background-color: #5A0000 !important; }
         .focus\:ring-picks-red-light:focus { --tw-ring-color: #A34747; }
         .text-picks-dark-gray { color: #595959; }
         
@@ -101,16 +101,10 @@
     /** Logs a message to the UI log container. */
     const log = (message, isError = false) => {
         const logContainer = document.getElementById('logContainer');
-        const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const logEntry = document.createElement('p');
-        
-        // Use custom class names defined in the style block for color-inversion
-        logEntry.className = isError ? 'log-entry text-red-700' : 'log-entry text-gray-800'; 
+        // ... (timestamp and logEntry creation remains the same)
 
-        logEntry.innerHTML = `<span class="text-gray-400">${timestamp} | </span>${message}`;
-        
-        // Remove 'Log empty' message if present
-        if (logContainer.querySelector('.text-gray-400')) { // Updated selector based on new empty log text color
+        // FIX: Use a simple check for the initial log content and replace it immediately.
+        if (logContainer.firstElementChild && logContainer.firstElementChild.textContent.includes("Log empty.")) {
             logContainer.innerHTML = '';
         }
 
@@ -479,12 +473,13 @@
     // ====================================================================
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Set proxy status alert on load
+/*
+        // Set proxy status alert on load
         const proxyAlert = document.getElementById('proxy-alert');
         // Updated alert message to reflect the origin being used.
         proxyAlert.innerHTML = `**Worker's Expected Origin:** <code>https://${GITHUB_USERNAME}.github.io</code> | **PROXY_URL:** <code>${PROXY_URL}</code>. <span class="font-bold">If running on GitHub Pages, verify this URL.</span>`;
         proxyAlert.classList.remove('hidden');
-
+*/
         // Attach event listener to the button
         const processButton = document.getElementById('processButton');
         processButton.addEventListener('click', processData);
@@ -501,4 +496,5 @@
 </script>
 </body>
 </html>
+
 

@@ -4,54 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Picks Payroll Data Processor</title>
-    <!-- Favicon: Corrected path for GitHub Pages deployment -->
-    <link rel="icon" href="Favicon16.ico" type="image/x-icon">
+        <link rel="icon" href="/Favicon16.ico" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
-        .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #e0e0e0; }
-        
-        /* Define custom brand colors: Primary Accent #670000, Structure #595959, White #FFFFFF */
-        .bg-picks-red { background-color: #670000; }
-        .hover\:bg-picks-red-dark:hover { background-color: #4C0000; }
-        .focus\:ring-picks-red-light:focus { --tw-ring-color: #9A3333; }
-        .text-picks-dark-gray { color: #595959; }
-        .bg-picks-structure { background-color: #595959; }
-        .border-picks-structure-light { border-color: #A0A0A0; }
+        .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #404040; } /* Adjusted border for dark log */
+        
+        /* Define custom brand colors: Primary Accent #760000, Structure #595959, White #FFFFFF */
+        .bg-picks-red { background-color: #760000; } /* Main Brand Red */
+        .hover\:bg-picks-red-dark:hover { background-color: #5A0000; } /* Darker Red for hover */
+        .focus\:ring-picks-red-light:focus { --tw-ring-color: #A34747; } /* Lighter Red for focus ring */
+        .text-picks-dark-gray { color: #595959; } /* Main Brand Gray */
+        .bg-picks-structure { background-color: #595959; } /* Log/Alert Background */
+        .border-picks-structure-light { border-color: #8C8C8C; } /* Lighter border for contrast */
 
-        /* Log text colors (ensuring white text on dark background) */
-        .log-entry.text-red-700 { color: #f87171; } /* Light red for error details */
-        .log-entry.text-gray-800 { color: #ffffff; } /* White text for standard logs */
-        .log-entry .text-gray-400 { color: #a0a0a0; } /* Lighter gray for timestamp */
+        /* Log text colors (ensuring white text on dark #595959 background) */
+        .log-entry.text-red-700 { color: #FFB3B3; } /* Very light red for high-contrast error details */
+        .log-entry.text-gray-800 { color: #FFFFFF; } /* White text for standard logs */
+        .log-entry .text-gray-400 { color: #CCCCCC; } /* Lighter gray for timestamp */
 
-        /* Override Tailwind's default gray text color in the log for better contrast */
-        #logContainer p.text-gray-400 { color: #a0a0a0 !important; }
+        /* Override Tailwind's default gray text color in the log for better contrast */
+        #logContainer p.text-gray-400 { color: #CCCCCC !important; }
     </style>
 </head>
 <body>
 
 <div class="min-h-screen p-4 sm:p-8">
-    <!-- Main content card with rounded corners -->
-    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl">
+        <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl">
 
-        <!-- Header Section: WHITE Background to match logo's black text/image -->
-        <div class="bg-white p-6 sm:p-10 rounded-t-2xl border-b border-gray-200">
-            <!-- Logo: Corrected path for GitHub Pages deployment -->
-            <img src="26264_Picks-Gallery.png" alt="Picks Gallery Logo" class="mb-4 w-48 h-auto">
+                <div class="bg-white p-6 sm:p-10 rounded-t-2xl border-b border-gray-200">
+                        <img src="26264_Picks-Gallery.png" alt="Picks Gallery Logo" class="mb-4 w-48 h-auto">
 
             <h1 class="text-3xl font-extrabold text-picks-dark-gray mb-2">Picks Payroll Data Processor</h1>
             <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
 
-            <!-- Proxy Status Alert (Initial State/Failure) - Dark Gray Background, light text -->
-            <div id="proxy-alert" class="bg-picks-structure border-l-4 border-yellow-400 text-white p-4 rounded-lg mb-6 hidden" role="alert">
+                        <div id="proxy-alert" class="bg-picks-structure border-l-4 border-yellow-400 text-white p-4 rounded-lg mb-6 hidden" role="alert">
             </div>
-        </div>
+        </div>
 
-        <!-- Main Body Section: White Background for interaction/readability -->
-        <div class="p-6 sm:p-10">
+                <div class="p-6 sm:p-10">
 
-            <!-- Main Action Button: Static (White/Dark Gray Text), Hover (Red/White Text), Centered -->
-            <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-picks-dark-gray text-base font-medium rounded-xl shadow-md text-picks-dark-gray bg-white hover:text-white hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-white disabled:text-picks-dark-gray">
+                        <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-picks-dark-gray text-base font-medium rounded-xl shadow-md text-picks-dark-gray bg-white hover:text-white hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-white disabled:text-picks-dark-gray">
                 <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-current hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -59,8 +52,7 @@
                 <span id="buttonText">Process Data and Generate Payroll File</span>
             </button>
 
-            <!-- Download Area (Hidden until complete) -->
-            <div id="downloadArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                        <div id="downloadArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
                 <h2 class="text-2xl font-bold text-green-600 mb-4">Processing Complete! </h2>
                 <a id="downloadCSV" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-150">
                     Download Payroll CSV
@@ -68,10 +60,8 @@
                 <p class="text-sm text-gray-500 mt-2">File name: payroll_upload_[Date].csv</p>
             </div>
 
-            <!-- Execution Log & Evidence -->
-            <h2 class="text-xl font-bold text-picks-dark-gray mt-8 mb-4">Execution Log & Evidence </h2>
-            <!-- Log container uses brand structure gray (#595959) and white log text for contrast -->
-            <div id="logContainer" class="bg-picks-structure p-4 border border-picks-structure-light rounded-lg max-h-96 overflow-y-auto">
+                        <h2 class="text-xl font-bold text-picks-dark-gray mt-8 mb-4">Execution Log & Evidence </h2>
+                        <div id="logContainer" class="bg-picks-structure p-4 border border-picks-structure-light rounded-lg max-h-96 overflow-y-auto">
                 <p class="text-gray-400">Log empty. Click 'Process Data' to begin...</p>
             </div>
         </div>
@@ -110,9 +100,9 @@
         const logContainer = document.getElementById('logContainer');
         const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const logEntry = document.createElement('p');
-        
-        // Use custom class names defined in the style block for color-inversion
-        logEntry.className = isError ? 'log-entry text-red-700' : 'log-entry text-gray-800'; 
+        
+        // Use custom class names defined in the style block for color-inversion
+        logEntry.className = isError ? 'log-entry text-red-700' : 'log-entry text-gray-800'; 
 
         logEntry.innerHTML = `<span class="text-gray-400">${timestamp} | </span>${message}`;
         
@@ -139,26 +129,26 @@
         return `${month}${day}${year}`;
     };
 
-    /** * Extracts an all-caps code. 
-     * Returns the raw text if it appears to be a simple code (e.g., "REG"), 
-     * or extracts the last all-caps word following ' - ' in a descriptive string. 
-     */
+    /** * Extracts an all-caps code. 
+     * Returns the raw text if it appears to be a simple code (e.g., "REG"), 
+     * or extracts the last all-caps word following ' - ' in a descriptive string. 
+     */
     const extractCode = (rawText, fieldName) => {
         if (!rawText) return log(`Warning: ${fieldName} is null/empty. Using 'NA'.`, true) || 'NA';
 
-        // 1. Simple Code Check: If the text is short and contains only uppercase letters, numbers, and /, assume it's already the code.
-        if (rawText.match(/^[A-Z0-9/]+$/)) {
-            return rawText;
-        }
+        // 1. Simple Code Check: If the text is short and contains only uppercase letters, numbers, and /, assume it's already the code.
+        if (rawText.match(/^[A-Z0-9/]+$/)) {
+            return rawText;
+        }
 
-        // 2. Complex Description Check: Look for ' - ' followed by a code (A-Z, 0-9, or / for O/T) at the end.
+        // 2. Complex Description Check: Look for ' - ' followed by a code (A-Z, 0-9, or / for O/T) at the end.
         const complexMatch = rawText.match(/\s-\s([A-Z0-9/]+)$/);
-        
+        
         if (complexMatch && complexMatch[1]) {
-            // Case 2: Complex description (e.g., "Task Name - SVG")
+            // Case 2: Complex description (e.g., "Task Name - SVG")
             return complexMatch[1];
         }
-        
+        
         // 3. Fallback
         log(`Warning: Could not standardize code for ${fieldName}: "${rawText}". Using 'NA'.`, true);
         return 'NA';
@@ -281,9 +271,9 @@
 
         } catch (error) {
             // NOTE: The hard "Failed to fetch" usually indicates a CORS/network block before
-            // the response status could even be read, OR a fundamental URL/DNS failure.
+            // the response status could even be read, OR a fundamental URL/DNS failure.
             log(`!! Final Fetch failed for ${reportName}. Proxy/Network Error: ${error.message}`, true);
-            
+            
             // Provide a focused error message.
             throw new Error(`Data acquisition failed for ${reportName}. Please ensure the PROXY_URL ("${PROXY_URL}") is exactly correct and the Cloudflare Worker is properly deployed and running.`);
         }
@@ -316,7 +306,7 @@
             if (!latestDate || dateObj > latestDate) latestDate = dateObj;
 
             // 1. Determine Pay Code and Department Code
-            const payCode = extractCode(entry.PayCode, 'PayCode'); 
+            const payCode = extractCode(entry.PayCode, 'PayCode'); 
             const departmentCode = extractCode(rawDepartment, 'Department'); 
             
             // 2. Determine Location Code
@@ -335,7 +325,7 @@
 
             const newEntry = {
                 'EEID': eeid,
-                'Name': name, // Added Name
+                'Name': name, // Added Name
                 'Location': locationCode,
                 'Week': weekEndingDate,
                 'Date': formattedDate, // Retaining original date for tracking/debugging if needed
@@ -378,7 +368,7 @@
 
         
         const finalPayrollData = Array.from(payrollDataMap.values()).map(data => ({
-            // CRITICAL CHANGE: New required column order and mapping
+            // CRITICAL CHANGE: New required column order and mapping
             'Name': data.Name,
             'EEID': data.EEID,
             'Date': data.Week, // Use the calculated Week Ending Date as the CSV Date column
@@ -452,8 +442,8 @@
 
             // 2. Transform and Aggregate
             const result = transformData(timeEntryData);
-            const finalData = result.data;
-            const finalReportDate = result.reportDate;
+            const finalData = result.data;
+            const finalReportDate = result.reportDate;
 
             // 3. Generate CSV
             const csvContent = convertToCSV(finalData);
@@ -464,7 +454,7 @@
             
             const downloadButton = document.getElementById('downloadCSV');
             downloadButton.href = url;
-            // CRITICAL CHANGE: Updated file name format using the latest week ending date
+            // CRITICAL CHANGE: Updated file name format using the latest week ending date
             downloadButton.download = `Picks-Payroll-Upload-${finalReportDate}.csv`;
             
             document.getElementById('downloadArea').classList.remove('hidden');

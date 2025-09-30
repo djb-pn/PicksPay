@@ -36,7 +36,7 @@
 
         <!-- Download Area (Hidden until complete) -->
         <div id="downloadArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
-            <h2 class="text-2xl font-bold text-green-600 mb-4">Processing Complete! </h2>
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Processing Complete! </h2>
             <a id="downloadCSV" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-150">
                 Download Payroll CSV
             </a>
@@ -44,7 +44,7 @@
         </div>
 
         <!-- Execution Log & Evidence -->
-        <h2 class="text-xl font-bold text-indigo-800 mt-8 mb-4">Execution Log & Evidence </h2>
+        <h2 class="text-xl font-bold text-indigo-800 mt-8 mb-4">Execution Log & Evidence </h2>
         <div id="logContainer" class="bg-gray-50 p-4 border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
             <p class="text-gray-500">Log empty. Click 'Process Data' to begin...</p>
         </div>
@@ -109,16 +109,30 @@
         return `${month}${day}${year}`;
     };
 
-    /** Extracts the all-caps code from the end of a string (e.g., "Install: MSDSHELBA - SVG" -> "SVG") */
+    /** * Extracts an all-caps code. 
+     * Returns the raw text if it appears to be a simple code (e.g., "REG"), 
+     * or extracts the last all-caps word following ' - ' in a descriptive string. 
+     */
     const extractCode = (rawText, fieldName) => {
         if (!rawText) return log(`Warning: ${fieldName} is null/empty. Using 'NA'.`, true) || 'NA';
-        
-        // Regex looks for ' - ' followed by one or more ALL-CAPS/numeric characters at the end of the string.
-        const match = rawText.match(/\s-\s([A-Z0-9]+)$/);
-        if (match && match[1]) {
-            return match[1];
+
+        // Regex to check for ' - ' followed by a code (A-Z, 0-9, or / for O/T) at the end.
+        const complexMatch = rawText.match(/\s-\s([A-Z0-9/]+)$/);
+        
+        if (complexMatch && complexMatch[1]) {
+            // Case 1: Complex description (e.g., "Task Name - SVG")
+            return complexMatch[1];
         }
-        log(`Warning: Could not extract all-caps code from ${fieldName}: "${rawText}". Using 'NA'.`, true);
+        
+        // Case 2: Simple Code check (e.g., "REG", "PTO", "O/T"). 
+        // If the raw text consists ONLY of all caps, numbers, or slashes, assume it's the code and return it silently.
+        // This stops the unnecessary warnings for clean codes like "REG".
+        if (rawText.match(/^[A-Z0-9/]+$/)) {
+            return rawText;
+        }
+
+        // 3. Fallback
+        log(`Warning: Could not standardize code for ${fieldName}: "${rawText}". Using 'NA'.`, true);
         return 'NA';
     };
 
@@ -277,7 +291,7 @@
             if (!latestDate || dateObj > latestDate) latestDate = dateObj;
 
             // 1. Determine Pay Code and Department Code
-            // Apply extractCode to entry.PayCode to get the last all-caps word.
+            // The extractCode logic is now updated to handle both simple codes ("REG") and complex strings ("Task - SVG").
             const payCode = extractCode(entry.PayCode, 'PayCode'); 
             const departmentCode = extractCode(rawDepartment, 'Department'); 
             

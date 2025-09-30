@@ -72,13 +72,25 @@
             <div id="log" class="log-box p-4 rounded-lg text-sm text-gray-700">
                 <p>Ready to process. Press the button above to begin the data extraction and transformation process.</p>
                 <p class="mt-2 p-2 bg-yellow-100 text-yellow-800 rounded-md border border-yellow-300">
-                    ⚠️ **CORS Warning:** Although the reports are public, modern browsers prevent direct fetching from external APIs in this manner. For reliable use, a **serverless proxy function** is highly recommended to fetch the data. If the fetch fails, mock data will be used for demonstration.
+                    ⚠️ **PROXY REQUIRED:** This app must call a serverless proxy to access the Striven reports securely.
+                </p>
+                <p class="mt-2 p-2 bg-blue-100 text-blue-800 rounded-md border border-blue-300" id="proxy-alert">
+                    Please replace the **PROXY_URL** and **GITHUB_USERNAME** placeholders in the script below with your actual values.
                 </p>
             </div>
         </div>
     </div>
 
     <script type="module">
+        // --- PROXY CONFIGURATION START (You MUST update these after deploying your Cloudflare Worker) ---
+        // 1. Enter the URL for your deployed Cloudflare Worker (e.g., https://picks-pay-proxy.workers.dev)
+        const PROXY_URL = "https://pickspay.darin-075.workers.dev"; 
+        
+        // 2. Enter your GitHub username (This is used to construct the final GitHub Pages URL for logging/security reference)
+        const GITHUB_USERNAME = "djb-pn"; 
+        // --- PROXY CONFIGURATION END ---
+        
+
         // Helper to update the log panel
         const log = (message, type = 'info') => {
             const logElement = document.getElementById('log');
@@ -421,28 +433,52 @@
 
         let finalPayrollData = [];
 
-        // Function to safely fetch data with exponential backoff
-        async function fetchData(url, attempt = 1) {
-            log(`Attempting to fetch from: ${url}`);
+        // Function to safely fetch data via the proxy
+        async function fetchData(reportKey, attempt = 1) {
+            
+            // Check for unconfigured proxy URL
+            if (PROXY_URL.includes("https://pickspay.darin-075.workers.dev/") || GITHUB_USERNAME.includes("YOUR-GITHUB-USERNAME")) {
+                throw new Error("Proxy configuration incomplete. Please update PROXY_URL and GITHUB_USERNAME.");
+            }
+            
+            // The request hits the worker URL, specifying which report it needs.
+            const proxyEndpoint = `${PROXY_URL}?report=${reportKey}`;
+            log(`Attempting to fetch Report ${reportKey} via proxy: ${proxyEndpoint}`);
             
             try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                const response = await fetch(proxyEndpoint);
+
+                if (response.status === 403) {
+                     // 403 usually means the CORS/Origin check failed on the Worker side
+                     log("Proxy 403 Error: Access denied. Check if the Worker's ALLOWED_ORIGIN matches your GitHub Pages URL.", 'error');
+                     throw new Error("Proxy error (403).");
                 }
+                
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    throw new Error(`Proxy HTTP error! status: ${response.status}. Detail: ${errorBody.slice(0, 100)}...`);
+                }
+                
                 const data = await response.json();
-                log(`Successfully received data from: ${url}`);
-                return data;
+                
+                // The Worker returns the data in the same format as the Striven API (with a 'data' property)
+                if (data && data.data) {
+                    log(`Successfully received data from Report ${reportKey}.`);
+                    return data;
+                } else {
+                    throw new Error("Proxy returned data, but 'data' property is missing or null.");
+                }
+
             } catch (error) {
                 if (attempt < 3 && error.message.includes("Failed to fetch")) {
-                    // Implement exponential backoff for network issues (like CORS errors appearing as network errors)
+                    // Implement exponential backoff for network issues
                     const delay = 2 ** attempt * 1000;
-                    log(`Fetch attempt ${attempt} failed (likely CORS). Retrying in ${delay / 1000}s...`);
+                    log(`Fetch attempt ${attempt} failed. Retrying in ${delay / 1000}s...`);
                     await new Promise(resolve => setTimeout(resolve, delay));
-                    return fetchData(url, attempt + 1);
+                    return fetchData(reportKey, attempt + 1);
                 }
-                log(`Final Fetch failed for ${url}: ${error.message}.`, 'error');
-                throw new Error("CORS/Network error. Using mock data for demonstration.");
+                log(`Final Fetch failed for Report ${reportKey}: ${error.message}.`, 'error');
+                throw new Error("Proxy or Network error. Using mock data for demonstration.");
             }
         }
 
@@ -458,22 +494,32 @@
             button.disabled = true;
             spinner.classList.remove('hidden');
             log(`Process started at ${new Date().toLocaleTimeString()}...`);
-
-            const url1 = document.getElementById('url1').value;
-            const url2 = document.getElementById('url2').value;
+            
+            // Check for placeholder values immediately
+            if (PROXY_URL.includes("https://pickspay.darin-075.workers.dev/") || GITHUB_USERNAME.includes("YOUR-GITHUB-USERNAME")) {
+                log("FATAL ERROR: Proxy configuration is incomplete. Update PROXY_URL and GITHUB_USERNAME in the script.", 'error');
+                button.disabled = false;
+                spinner.classList.add('hidden');
+                return;
+            }
+            
+            // Display the GitHub Pages URL used for Worker security reference
+            const githubUrl = `https://${GITHUB_USERNAME.toLowerCase()}.github.io/PicksPay`;
+            log(`App running from: ${githubUrl}`);
+            document.getElementById('proxy-alert').innerHTML = `**Worker's ALLOWED\_ORIGIN must be set to:** <code class="font-bold">${githubUrl}</code>`;
 
             let report1Data = null;
             let report2Data = null;
 
-            // Step 1: Data Extraction (Attempting live fetch)
+            // Step 1: Data Extraction (Using Proxy)
             try {
-                // Attempt to fetch live data
-                report1Data = (await fetchData(url1)).data;
-                report2Data = (await fetchData(url2)).data;
+                // Attempt to fetch live data via the proxy
+                report1Data = (await fetchData('report1')).data;
+                report2Data = (await fetchData('report2')).data;
                 log(`LIVE DATA retrieved. ${report1Data.length} time entries found.`);
 
             } catch (error) {
-                // If live fetch fails (most likely due to CORS), fall back to mock data
+                // If fetch fails, fall back to mock data
                 log(error.message, 'error');
                 log("--- FALLBACK: Using MOCK DATA for transformation logic demonstration. ---");
                 report1Data = mockTimeData;

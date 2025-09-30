@@ -1,500 +1,496 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Picks Payroll Data Processor</title>
-        <link rel="icon" href="/Favicon16.ico" type="image/x-icon">
-    <script src="https://cdn.tailwindcss.com"></script>
-      <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
-        .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #404040; }
-        
-        /* Define custom brand colors: Primary Accent #760000, Structure #595959, White #FFFFFF */
-        .bg-picks-red { background-color: #760000; }
-        .hover\:bg-picks-red-dark:hover { background-color: #5A0000 !important; }
-        .focus\:ring-picks-red-light:focus { --tw-ring-color: #A34747; }
-        .text-picks-dark-gray { color: #595959; }
-        
-        /* FIX: Adding !important to force the custom background over Tailwind's defaults */
-        .bg-picks-structure { background-color: #595959 !important; } 
-        
-        .border-picks-structure-light { border-color: #8C8C8C; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picks Payroll Data Processor</title>
+    <link rel="icon" href="/Favicon16.ico" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
+        .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #404040; }
+        
+        /* Define custom brand colors: Primary Accent #760000, Structure #595959, White #FFFFFF */
+        .bg-picks-red { background-color: #760000; }
+        .hover\:bg-picks-red-dark:hover { background-color: #5A0000 !important; } /* FIX: Enforce hover color */
+        .focus\:ring-picks-red-light:focus { --tw-ring-color: #A34747; }
+        .text-picks-dark-gray { color: #595959; }
+        
+        .bg-picks-structure { background-color: #595959 !important; } /* FIX: Enforce background color for log/alert */
+        
+        .border-picks-structure-light { border-color: #8C8C8C; }
 
-        /* Log text colors (ensuring white text on dark #595959 background) */
-        .log-entry.text-red-700 { color: #FFB3B3; }
-        .log-entry.text-gray-800 { color: #FFFFFF; }
-        .log-entry .text-gray-400 { color: #CCCCCC; }
+        /* Log text colors (ensuring white text on dark #595959 background) */
+        .log-entry.text-red-700 { color: #FFB3B3; }
+        .log-entry.text-gray-800 { color: #FFFFFF; }
+        .log-entry .text-gray-400 { color: #CCCCCC; }
 
-        /* Override Tailwind's default gray text color in the log for better contrast */
-        #logContainer p.text-gray-400 { color: #CCCCCC !important; }
-      </style>
+        /* Override Tailwind's default gray text color in the log for better contrast */
+        #logContainer p.text-gray-400 { color: #CCCCCC !important; }
+    </style>
 </head>
 <body>
 
 <div class="min-h-screen p-4 sm:p-8">
-        <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl">
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl">
 
-                <div class="bg-white p-6 sm:p-10 rounded-t-2xl border-b border-gray-200">
-                        <img src="26264_Picks-Gallery.png" alt="Picks Gallery Logo" class="mb-4 w-48 h-auto">
+        <div class="bg-white p-6 sm:p-10 rounded-t-2xl border-b border-gray-200">
+            <img src="26264_Picks-Gallery.png" alt="Picks Gallery Logo" class="mb-4 w-48 h-auto">
 
-            <h1 class="text-3xl font-extrabold text-picks-dark-gray mb-2">Picks Payroll Data Processor</h1>
-            <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
+            <h1 class="text-3xl font-extrabold text-picks-dark-gray mb-2">Picks Payroll Data Processor</h1>
+            <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
 
-                        <div id="proxy-alert" class="bg-picks-structure border-l-4 border-yellow-400 text-white p-4 rounded-lg mb-6 hidden" role="alert">
-            </div>
-        </div>
+            </div>
 
-                <div class="p-6 sm:p-10">
+        <div class="p-6 sm:p-10">
 
-                        <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-picks-dark-gray text-base font-medium rounded-xl shadow-md text-picks-dark-gray bg-white hover:text-white hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-white disabled:text-picks-dark-gray">
-                <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-current hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span id="buttonText">Process Data and Generate Payroll File</span>
-            </button>
+            <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-picks-dark-gray text-base font-medium rounded-xl shadow-md text-picks-dark-gray bg-white hover:text-white hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-white disabled:text-picks-dark-gray">
+                <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-current hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="buttonText">Process Data and Generate Payroll File</span>
+            </button>
 
-                        <div id="downloadArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
-                <h2 class="text-2xl font-bold text-green-600 mb-4">Processing Complete! </h2>
-                <a id="downloadCSV" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-150">
-                    Download Payroll CSV
-                </a>
-                <p class="text-sm text-gray-500 mt-2">File name: payroll_upload_[Date].csv</p>
-            </div>
+            <div id="downloadArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                <h2 class="text-2xl font-bold text-green-600 mb-4">Processing Complete! </h2>
+                <a id="downloadCSV" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-150">
+                    Download Payroll CSV
+                </a>
+                <p class="text-sm text-gray-500 mt-2">File name: payroll_upload_[Date].csv</p>
+            </div>
 
-                        <h2 class="text-xl font-bold text-picks-dark-gray mt-8 mb-4">Execution Log & Evidence </h2>
-                        <div id="logContainer" class="bg-picks-structure p-4 border border-picks-structure-light rounded-lg max-h-96 overflow-y-auto">
-                <p class="text-gray-400">Log empty. Click 'Process Data' to begin...</p>
-            </div>
-        </div>
-    </div>
+            <h2 class="text-xl font-bold text-picks-dark-gray mt-8 mb-4">Execution Log & Evidence </h2>
+            <div id="logContainer" class="bg-picks-structure p-4 border border-picks-structure-light rounded-lg max-h-96 overflow-y-auto">
+                <p class="text-gray-400">Log empty. Click 'Process Data' to begin...</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script type="module">
-    // ====================================================================
-    // 1. CONFIGURATION (MUST BE EDITED)
-    // ====================================================================
+    // ====================================================================
+    // 1. CONFIGURATION (MUST BE EDITED)
+    // ====================================================================
 
-    // NOTE: This URL must be manually updated to your deployed Cloudflare Worker address.
-    const PROXY_URL = "https://pickspay.darin-075.workers.dev";
-    
-    // NOTE: This must be manually updated to your exact GitHub username (used for security alert).
-    const GITHUB_USERNAME = "djb-pn"; 
+    // NOTE: This URL must be manually updated to your deployed Cloudflare Worker address.
+    const PROXY_URL = "https://pickspay.darin-075.workers.dev";
+    
+    // NOTE: This must be manually updated to your exact GitHub username (used for security alert).
+    const GITHUB_USERNAME = "djb-pn"; 
 
-    const ENDPOINT_MAP = {
-        'report1': 'mMSZsQF0CyRyRAnpnULyr8CwAeqL9CSBy0YWVJTSgMChnr0eafiiI6d5r2L1mB6sPtAMjT78oocfUmN0Io0w', // Time Entry Data
-        'report2': '4N9G5m5Ss0sZP9A4Fx1eZzuqdQbztB5GqU0A4UalE5xRUDrjQDIOzAlhhJoEX9t8TvucFT5GmRJB0bic8VwQ'  // PTO/Pay Code Details
-    };
+    const ENDPOINT_MAP = {
+        'report1': 'mMSZsQF0CyRyRAnpnULyr8CwAeqL9CSBy0YWVJTSgMChnr0eafiiI6d5r2L1mB6sPtAMjT78oocfUmN0Io0w', // Time Entry Data
+        'report2': '4N9G5m5Ss0sZP9A4Fx1eZzuqdQbztB5GqU0A4UalE5xRUDrjQDIOzAlhhJoEX9t8TvucFT5GmRJB0bic8VwQ'  // PTO/Pay Code Details
+    };
 
-    const LOCATION_MAP = {
-        'Osage Beach': '1',
-        'Columbia': '2'
-    };
-    
-    // --------------------------------------------------------------------
+    const LOCATION_MAP = {
+        'Osage Beach': '1',
+        'Columbia': '2'
+    };
+    
+    // --------------------------------------------------------------------
 
-    // ====================================================================
-    // 2. HELPER FUNCTIONS
-    // ====================================================================
+    // ====================================================================
+    // 2. HELPER FUNCTIONS
+    // ====================================================================
 
-    /** Logs a message to the UI log container. */
-    const log = (message, isError = false) => {
-        const logContainer = document.getElementById('logContainer');
-        // ... (timestamp and logEntry creation remains the same)
+    /** Logs a message to the UI log container. */
+    const log = (message, isError = false) => {
+        const logContainer = document.getElementById('logContainer');
+        const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const logEntry = document.createElement('p');
+        
+        // Use custom class names defined in the style block for color-inversion
+        logEntry.className = isError ? 'log-entry text-red-700' : 'log-entry text-gray-800'; 
 
-        // FIX: Use a simple check for the initial log content and replace it immediately.
-        if (logContainer.firstElementChild && logContainer.firstElementChild.textContent.includes("Log empty.")) {
-            logContainer.innerHTML = '';
-        }
+        logEntry.innerHTML = `<span class="text-gray-400">${timestamp} | </span>${message}`;
+        
+        // FIX: Clean logic to remove 'Log empty' message if present
+        if (logContainer.firstElementChild && logContainer.firstElementChild.textContent.includes("Log empty.")) {
+            logContainer.innerHTML = '';
+        }
 
-        logContainer.appendChild(logEntry);
-        logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to bottom
-    };
+        logContainer.appendChild(logEntry);
+        logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to bottom
+    };
 
-    /** Formats a date string into MMDDYYYY format. */
-    const formatDate = (dateStr) => {
-        const date = new Date(dateStr);
-        if (isNaN(date)) {
-            log(`Warning: Could not parse date: ${dateStr}. Using raw string.`, true);
-            return dateStr;
-        }
-        // Use UTC date methods to prevent timezone shifts from changing the day
-        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(date.getUTCDate()).padStart(2, '0');
-        const year = date.getUTCFullYear();
-        return `${month}${day}${year}`;
-    };
+    /** Formats a date string into MMDDYYYY format. */
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        if (isNaN(date)) {
+            log(`Warning: Could not parse date: ${dateStr}. Using raw string.`, true);
+            return dateStr;
+        }
+        // Use UTC date methods to prevent timezone shifts from changing the day
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const year = date.getUTCFullYear();
+        return `${month}${day}${year}`;
+    };
 
-    /** * Extracts an all-caps code. 
-     * Returns the raw text if it appears to be a simple code (e.g., "REG"), 
-     * or extracts the last all-caps word following ' - ' in a descriptive string. 
-     */
-    const extractCode = (rawText, fieldName) => {
-        if (!rawText) return log(`Warning: ${fieldName} is null/empty. Using 'NA'.`, true) || 'NA';
+    /** * Extracts an all-caps code. 
+     * Returns the raw text if it appears to be a simple code (e.g., "REG"), 
+     * or extracts the last all-caps word following ' - ' in a descriptive string. 
+     */
+    const extractCode = (rawText, fieldName) => {
+        if (!rawText) return log(`Warning: ${fieldName} is null/empty. Using 'NA'.`, true) || 'NA';
 
-        // 1. Simple Code Check: If the text is short and contains only uppercase letters, numbers, and /, assume it's already the code.
-        if (rawText.match(/^[A-Z0-9/]+$/)) {
-            return rawText;
-        }
+        // 1. Simple Code Check: If the text is short and contains only uppercase letters, numbers, and /, assume it's already the code.
+        if (rawText.match(/^[A-Z0-9/]+$/)) {
+            return rawText;
+        }
 
-        // 2. Complex Description Check: Look for ' - ' followed by a code (A-Z, 0-9, or / for O/T) at the end.
-        const complexMatch = rawText.match(/\s-\s([A-Z0-9/]+)$/);
-        
-        if (complexMatch && complexMatch[1]) {
-            // Case 2: Complex description (e.g., "Task Name - SVG")
-            return complexMatch[1];
-        }
-        
-        // 3. Fallback
-        log(`Warning: Could not standardize code for ${fieldName}: "${rawText}". Using 'NA'.`, true);
-        return 'NA';
-    };
+        // 2. Complex Description Check: Look for ' - ' followed by a code (A-Z, 0-9, or / for O/T) at the end.
+        const complexMatch = rawText.match(/\s-\s([A-Z0-9/]+)$/);
+        
+        if (complexMatch && complexMatch[1]) {
+            // Case 2: Complex description (e.g., "Task Name - SVG")
+            return complexMatch[1];
+        }
+        
+        // 3. Fallback
+        log(`Warning: Could not standardize code for ${fieldName}: "${rawText}". Using 'NA'.`, true);
+        return 'NA';
+    };
 
-    /** Generates the next Saturday's date (Week Ending Date) in MMDDYYYY format. */
-    const calculateWeekEndingDate = (dateStr) => {
-        const date = new Date(dateStr);
-        if (isNaN(date)) return dateStr;
+    /** Generates the next Saturday's date (Week Ending Date) in MMDDYYYY format. */
+    const calculateWeekEndingDate = (dateStr) => {
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr;
 
-        // 0 = Sunday, 6 = Saturday. Payroll week ends on Saturday (6).
-        const dayOfWeek = date.getDay();
-        const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
-        
-        // Adjust the date to the next Saturday
-        date.setDate(date.getDate() + daysUntilSaturday);
+        // 0 = Sunday, 6 = Saturday. Payroll week ends on Saturday (6).
+        const dayOfWeek = date.getDay();
+        const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+        
+        // Adjust the date to the next Saturday
+        date.setDate(date.getDate() + daysUntilSaturday);
 
-        return formatDate(date);
-    };
+        return formatDate(date);
+    };
 
-    // Helper to calculate US Paid Holidays for the given year
-    const getHolidays = (year) => {
-        const holidays = new Set();
-        const addHoliday = (month, day) => holidays.add(formatDate(new Date(Date.UTC(year, month, day))));
+    // Helper to calculate US Paid Holidays for the given year
+    const getHolidays = (year) => {
+        const holidays = new Set();
+        const addHoliday = (month, day) => holidays.add(formatDate(new Date(Date.UTC(year, month, day))));
 
-        // New Year's Day (Jan 1)
-        addHoliday(0, 1);
-        
-        // Independence Day (July 4)
-        addHoliday(6, 4);
+        // New Year's Day (Jan 1)
+        addHoliday(0, 1);
+        
+        // Independence Day (July 4)
+        addHoliday(6, 4);
 
-        // Christmas Day (Dec 25)
-        addHoliday(11, 25);
-        
-        // Helper for Nth day of month (e.g., last Monday in May)
-        const getNthDayOfMonth = (n, dayOfWeek, month) => {
-            const date = new Date(Date.UTC(year, month, 1));
-            let count = 0;
-            while (date.getUTCMonth() === month) {
-                if (date.getUTCDay() === dayOfWeek) {
-                    count++;
-                    if (n === 'last' ? date.getUTCMonth() === month : count === n) {
-                        return date;
-                    }
-                }
-                date.setUTCDate(date.getUTCDate() + 1);
-            }
-            return null;
-        };
+        // Christmas Day (Dec 25)
+        addHoliday(11, 25);
+        
+        // Helper for Nth day of month (e.g., last Monday in May)
+        const getNthDayOfMonth = (n, dayOfWeek, month) => {
+            const date = new Date(Date.UTC(year, month, 1));
+            let count = 0;
+            while (date.getUTCMonth() === month) {
+                if (date.getUTCDay() === dayOfWeek) {
+                    count++;
+                    if (n === 'last' ? date.getUTCMonth() === month : count === n) {
+                        return date;
+                    }
+                }
+                date.setUTCDate(date.getUTCDate() + 1);
+            }
+            return null;
+        };
 
-        // Memorial Day (Last Monday in May)
-        const memorialDay = getNthDayOfMonth('last', 1, 4); // 1=Monday, 4=May
-        if (memorialDay) holidays.add(formatDate(memorialDay));
+        // Memorial Day (Last Monday in May)
+        const memorialDay = getNthDayOfMonth('last', 1, 4); // 1=Monday, 4=May
+        if (memorialDay) holidays.add(formatDate(memorialDay));
 
-        // Labor Day (First Monday in September)
-        const laborDay = getNthDayOfMonth(1, 1, 8); // 1=Monday, 8=September
-        if (laborDay) holidays.add(formatDate(laborDay));
+        // Labor Day (First Monday in September)
+        const laborDay = getNthDayOfMonth(1, 1, 8); // 1=Monday, 8=September
+        if (laborDay) holidays.add(formatDate(laborDay));
 
-        // Thanksgiving Day (Fourth Thursday in November)
-        const getFourthThursday = (year) => {
-            const date = new Date(Date.UTC(year, 10, 1)); // November 1st
-            let count = 0;
-            while (date.getUTCMonth() === 10) {
-                if (date.getUTCDay() === 4) { // 4 = Thursday
-                    count++;
-                    if (count === 4) return date;
-                }
-                date.setUTCDate(date.getUTCDate() + 1);
-            }
-            return null;
-        };
-        const thanksgivingDay = getFourthThursday(year);
-        if (thanksgivingDay) holidays.add(formatDate(thanksgivingDay));
+        // Thanksgiving Day (Fourth Thursday in November)
+        const getFourthThursday = (year) => {
+            const date = new Date(Date.UTC(year, 10, 1)); // November 1st
+            let count = 0;
+            while (date.getUTCMonth() === 10) {
+                if (date.getUTCDay() === 4) { // 4 = Thursday
+                    count++;
+                    if (count === 4) return date;
+                }
+                date.setUTCDate(date.getUTCDate() + 1);
+            }
+            return null;
+        };
+        const thanksgivingDay = getFourthThursday(year);
+        if (thanksgivingDay) holidays.add(formatDate(thanksgivingDay));
 
-        return holidays;
-    };
-
-
-    // ====================================================================
-    // 3. CORE LOGIC
-    // ====================================================================
-    
-    let isProcessing = false;
-
-    /** Fetches a single report from the Cloudflare proxy. */
-    const fetchData = async (reportName) => {
-        log(`|-- Attempting to fetch ${reportName} via Cloudflare Proxy...`);
-        const endpointId = ENDPOINT_MAP[reportName];
-        const url = `${PROXY_URL}?report=${reportName}&id=${endpointId}`;
-
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                // Removed X-App-Origin header since running from the correct origin (GitHub Pages)
-                headers: { 'Cache-Control': 'no-cache' }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                log(`!! LIVE DATA FETCH FAILED for ${reportName}. Status: ${response.status}`, true);
-                log(`   RAW PROXY RESPONSE (Start): ${errorText.substring(0, 150)}... (End)`, true);
-                throw new Error(`Proxy error: ${response.status} - ${errorText.substring(0, 50)}`);
-            }
-            
-            // Parse the response body as JSON
-            const jsonResponse = await response.json();
-
-            // Check if the response structure is valid (expecting { data: [...] })
-            if (jsonResponse && Array.isArray(jsonResponse.data)) {
-                if (jsonResponse.data.length === 0) {
-                    log(`!! LIVE DATA retrieved for ${reportName} but it contained 0 records.`, true);
-                } else {
-                    log(`|-- Successfully retrieved LIVE DATA for ${reportName}. Records found: ${jsonResponse.data.length}`);
-                }
-                return jsonResponse.data;
-            } else {
-                log(`!! LIVE DATA FETCH FAILED for ${reportName}: Invalid JSON structure. Missing 'data' array.`, true);
-                throw new Error("API data format invalid. Received unexpected structure.");
-            }
-
-        } catch (error) {
-            // NOTE: The hard "Failed to fetch" usually indicates a CORS/network block before
-            // the response status could even be read, OR a fundamental URL/DNS failure.
-            log(`!! Final Fetch failed for ${reportName}. Proxy/Network Error: ${error.message}`, true);
-            
-            // Provide a focused error message.
-            throw new Error(`Data acquisition failed for ${reportName}. Please ensure the PROXY_URL ("${PROXY_URL}") is exactly correct and the Cloudflare Worker is properly deployed and running.`);
-        }
-    };
-
-    /** Transforms raw report data into aggregated payroll structure. */
-    const transformData = (timeEntries) => {
-        log(`|-- Starting data aggregation and transformation...`);
-
-        const payrollDataMap = new Map(); // Key: EEID_PayCode_Week, Value: { EEID, Name, PayCode, Hours, ... }
-        let earliestDate = null;
-        let latestDate = null; // Will be used to determine the final payroll date.
-        
-        timeEntries.forEach(entry => {
-            const eeid = entry.EEID || 'UNKNOWN';
-            const name = entry.Name || 'UNKNOWN NAME'; // Added Name extraction
-            const rawLocation = entry.Location || 'UNKNOWN';
-            const rawDepartment = entry.Department || 'UNKNOWN';
-            const hours = parseFloat(entry.Hours) || 0.0;
-            const dateObj = new Date(entry.Date);
-            const rawDate = entry.Date;
-
-            if (isNaN(dateObj)) {
-                log(`Warning: Skipping record for EEID ${eeid} due to invalid date: ${rawDate}.`, true);
-                return;
-            }
-
-            // Track date range and year for holiday check
-            if (!earliestDate || dateObj < earliestDate) earliestDate = dateObj;
-            if (!latestDate || dateObj > latestDate) latestDate = dateObj;
-
-            // 1. Determine Pay Code and Department Code
-            const payCode = extractCode(entry.PayCode, 'PayCode'); 
-            const departmentCode = extractCode(rawDepartment, 'Department'); 
-            
-            // 2. Determine Location Code
-            const locationCode = LOCATION_MAP[rawLocation] || log(`Warning: Unknown location "${rawLocation}" for EEID ${eeid}. Using 'NA'.`, true) || 'NA';
-
-            // 3. Determine Week Ending Date (Next Saturday)
-            const weekEndingDate = calculateWeekEndingDate(rawDate);
-            
-            // 4. Determine Date in MMDDYYYY format (Note: This is the original date, not the Week ending date)
-            const formattedDate = formatDate(rawDate);
-
-            // 5. Aggregate
-            const key = `${eeid}_${payCode}_${locationCode}_${departmentCode}_${weekEndingDate}`; // Week ending date is needed for aggregation uniqueness
-            
-            const existingEntry = payrollDataMap.get(key);
-
-            const newEntry = {
-                'EEID': eeid,
-                'Name': name, // Added Name
-                'Location': locationCode,
-                'Week': weekEndingDate,
-                'Date': formattedDate, // Retaining original date for tracking/debugging if needed
-                'PayCode': payCode,
-                'Department': departmentCode,
-                'Hours': (existingEntry ? existingEntry.Hours : 0) + hours
-            };
-            
-            payrollDataMap.set(key, newEntry);
-        });
-
-        // 6. Determine the final report date (most recent Week Ending Date)
-        let finalReportDate = null;
-        for (const entry of payrollDataMap.values()) {
-            // Compare the MMDDYYYY strings numerically (since they are ordered correctly)
-            if (!finalReportDate || entry.Week > finalReportDate) {
-                finalReportDate = entry.Week;
-            }
-        }
-
-        // 7. Check Holidays (Only if dates were found)
-        if (earliestDate && latestDate) {
-            const startYear = earliestDate.getUTCFullYear();
-            const endYear = latestDate.getUTCFullYear();
-            
-            const holidayDates = new Set();
-            for (let year = startYear; year <= endYear; year++) {
-                getHolidays(year).forEach(date => holidayDates.add(date));
-            }
-
-            let dateCursor = new Date(earliestDate);
-            while (dateCursor <= latestDate) {
-                const dateStr = formatDate(dateCursor);
-                if (holidayDates.has(dateStr)) {
-                    log(`⚠️ PAID HOLIDAY ALERT: ${new Date(dateCursor.getTime()).toDateString()} falls within the pay period.`, true);
-                }
-                dateCursor.setUTCDate(dateCursor.getUTCDate() + 1);
-            }
-        }
-
-        
-        const finalPayrollData = Array.from(payrollDataMap.values()).map(data => ({
-            // CRITICAL CHANGE: New required column order and mapping
-            'Name': data.Name,
-            'EEID': data.EEID,
-            'Date': data.Week, // Use the calculated Week Ending Date as the CSV Date column
-            'PayCode': data.PayCode,
-            'Location': data.Location,
-            'Department': data.Department,
-            'Hours': data.Hours.toFixed(2) // Format hours to 2 decimal places
-        }));
-
-        log(`|-- Aggregation complete. Total unique pay entries generated: ${finalPayrollData.length}`);
-        log(`|-- Final Payroll Date (used for filename): ${finalReportDate}`); // Log the determined date
-        log(`|-- Payroll Data Preview (Name, EEID, PayCode, Hours):`);
-        finalPayrollData.slice(0, 5).forEach(entry => {
-            log(`    - ${entry.Name}, ${entry.EEID}, ${entry.PayCode}, ${entry.Hours}`);
-        });
-
-        return { data: finalPayrollData, reportDate: finalReportDate };
-    };
+        return holidays;
+    };
 
 
-    /** Converts the final JSON data array into a CSV string. */
-    const convertToCSV = (data) => {
-        if (data.length === 0) return '';
+    // ====================================================================
+    // 3. CORE LOGIC
+    // ====================================================================
+    
+    let isProcessing = false;
 
-        const headers = Object.keys(data[0]);
-        const csvRows = [];
+    /** Fetches a single report from the Cloudflare proxy. */
+    const fetchData = async (reportName) => {
+        log(`|-- Attempting to fetch ${reportName} via Cloudflare Proxy...`);
+        const endpointId = ENDPOINT_MAP[reportName];
+        const url = `${PROXY_URL}?report=${reportName}&id=${endpointId}`;
 
-        // 1. Headers (Use the headers from the final structure)
-        csvRows.push(headers.join(','));
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                // Removed X-App-Origin header since running from the correct origin (GitHub Pages)
+                headers: { 'Cache-Control': 'no-cache' }
+            });
 
-        // 2. Data
-        data.forEach(row => {
-            const values = headers.map(header => {
-                const escaped = ('' + row[header]).replace(/"/g, '\\"');
-                // Ensure values containing commas or newlines are wrapped in quotes
-                if (escaped.includes(',') || escaped.includes('\n')) {
-                    return `"${escaped}"`;
-                }
-                return escaped;
-            });
-            csvRows.push(values.join(','));
-        });
+            if (!response.ok) {
+                const errorText = await response.text();
+                log(`!! LIVE DATA FETCH FAILED for ${reportName}. Status: ${response.status}`, true);
+                log(`    RAW PROXY RESPONSE (Start): ${errorText.substring(0, 150)}... (End)`, true);
+                throw new Error(`Proxy error: ${response.status} - ${errorText.substring(0, 50)}`);
+            }
+            
+            // Parse the response body as JSON
+            const jsonResponse = await response.json();
 
-        return csvRows.join('\n');
-    };
+            // Check if the response structure is valid (expecting { data: [...] })
+            if (jsonResponse && Array.isArray(jsonResponse.data)) {
+                if (jsonResponse.data.length === 0) {
+                    log(`!! LIVE DATA retrieved for ${reportName} but it contained 0 records.`, true);
+                } else {
+                    log(`|-- Successfully retrieved LIVE DATA for ${reportName}. Records found: ${jsonResponse.data.length}`);
+                }
+                return jsonResponse.data;
+            } else {
+                log(`!! LIVE DATA FETCH FAILED for ${reportName}: Invalid JSON structure. Missing 'data' array.`, true);
+                throw new Error("API data format invalid. Received unexpected structure.");
+            }
 
-    /** Handles the entire ETL process on button click. */
-    const processData = async () => {
-        if (isProcessing) return;
-        isProcessing = true;
-        
-        // UI State: Disable button, show spinner
-        document.getElementById('buttonText').textContent = 'Processing...';
-        document.getElementById('loadingSpinner').classList.remove('hidden');
-        document.getElementById('processButton').disabled = true;
-        document.getElementById('downloadArea').classList.add('hidden');
-        document.getElementById('logContainer').innerHTML = ''; // Clear log
+        } catch (error) {
+            // NOTE: The hard "Failed to fetch" usually indicates a CORS/network block before
+            // the response status could even be read, OR a fundamental URL/DNS failure.
+            log(`!! Final Fetch failed for ${reportName}. Proxy/Network Error: ${error.message}`, true);
+            
+            // Provide a focused error message.
+            throw new Error(`Data acquisition failed for ${reportName}. Please ensure the PROXY_URL ("${PROXY_URL}") is exactly correct and the Cloudflare Worker is properly deployed and running.`);
+        }
+    };
 
-        log('--- STARTING PAYROLL PROCESS ---');
+    /** Transforms raw report data into aggregated payroll structure. */
+    const transformData = (timeEntries) => {
+        log(`|-- Starting data aggregation and transformation...`);
 
-        try {
-            // 1. Fetch data from the two required sources via the Worker proxy
-            const timeEntryData = await fetchData('report1');
-            await fetchData('report2'); // Fetch but don't use yet.
+        const payrollDataMap = new Map(); // Key: EEID_PayCode_Week, Value: { EEID, Name, PayCode, Hours, ... }
+        let earliestDate = null;
+        let latestDate = null; // Will be used to determine the final payroll date.
+        
+        timeEntries.forEach(entry => {
+            const eeid = entry.EEID || 'UNKNOWN';
+            const name = entry.Name || 'UNKNOWN NAME'; // Added Name extraction
+            const rawLocation = entry.Location || 'UNKNOWN';
+            const rawDepartment = entry.Department || 'UNKNOWN';
+            const hours = parseFloat(entry.Hours) || 0.0;
+            const dateObj = new Date(entry.Date);
+            const rawDate = entry.Date;
 
-            // Ensure data arrays are present and not empty
-            if (!timeEntryData || timeEntryData.length === 0) {
-                log('!! ERROR: Time Entry data source returned zero records. Aborting.', true);
-                throw new Error("No time entry data found. Cannot proceed with payroll.");
-            }
+            if (isNaN(dateObj)) {
+                log(`Warning: Skipping record for EEID ${eeid} due to invalid date: ${rawDate}.`, true);
+                return;
+            }
 
-            // 2. Transform and Aggregate
-            const result = transformData(timeEntryData);
-            const finalData = result.data;
-            const finalReportDate = result.reportDate;
+            // Track date range and year for holiday check
+            if (!earliestDate || dateObj < earliestDate) earliestDate = dateObj;
+            if (!latestDate || dateObj > latestDate) latestDate = dateObj;
 
-            // 3. Generate CSV
-            const csvContent = convertToCSV(finalData);
+            // 1. Determine Pay Code and Department Code
+            const payCode = extractCode(entry.PayCode, 'PayCode'); 
+            const departmentCode = extractCode(rawDepartment, 'Department'); 
+            
+            // 2. Determine Location Code
+            const locationCode = LOCATION_MAP[rawLocation] || log(`Warning: Unknown location "${rawLocation}" for EEID ${eeid}. Using 'NA'.`, true) || 'NA';
 
-            // 4. Create and trigger download link
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            
-            const downloadButton = document.getElementById('downloadCSV');
-            downloadButton.href = url;
-            // CRITICAL CHANGE: Updated file name format using the latest week ending date
-            downloadButton.download = `Picks-Payroll-Upload-${finalReportDate}.csv`;
-            
-            document.getElementById('downloadArea').classList.remove('hidden');
-            log('--- PROCESS COMPLETE ---');
-            
-        } catch (e) {
-            // Catch the error thrown from fetchData or the 0-record check
-            log(`!! FATAL ERROR during processing: ${e.message}`, true);
-        } finally {
-            isProcessing = false;
-            document.getElementById('buttonText').textContent = 'Process Data and Generate Payroll File';
-            document.getElementById('loadingSpinner').classList.add('hidden');
-            document.getElementById('processButton').disabled = false;
-        }
-    };
-    
-    // ====================================================================
-    // 4. INITIALIZATION AND EVENT LISTENERS
-    // ====================================================================
+            // 3. Determine Week Ending Date (Next Saturday)
+            const weekEndingDate = calculateWeekEndingDate(rawDate);
+            
+            // 4. Determine Date in MMDDYYYY format (Note: This is the original date, not the Week ending date)
+            const formattedDate = formatDate(rawDate);
 
-    document.addEventListener('DOMContentLoaded', () => {
-/*
-        // Set proxy status alert on load
-        const proxyAlert = document.getElementById('proxy-alert');
-        // Updated alert message to reflect the origin being used.
-        proxyAlert.innerHTML = `**Worker's Expected Origin:** <code>https://${GITHUB_USERNAME}.github.io</code> | **PROXY_URL:** <code>${PROXY_URL}</code>. <span class="font-bold">If running on GitHub Pages, verify this URL.</span>`;
-        proxyAlert.classList.remove('hidden');
-*/
-        // Attach event listener to the button
-        const processButton = document.getElementById('processButton');
-        processButton.addEventListener('click', processData);
-        log('INFO: DOMContentLoaded fired. Event listener attached to processButton.');
+            // 5. Aggregate
+            const key = `${eeid}_${payCode}_${locationCode}_${departmentCode}_${weekEndingDate}`; // Week ending date is needed for aggregation uniqueness
+            
+            const existingEntry = payrollDataMap.get(key);
 
-        // Add an href to the download button/link element
-        const downloadButton = document.getElementById('downloadCSV');
-        if (downloadButton && downloadButton.tagName !== 'A') {
-            console.error("Download element is not an anchor tag. Correcting its structure for download functionality.");
-            // Quick fix for download button being a <button> instead of <a>
-        }
-    });
+            const newEntry = {
+                'EEID': eeid,
+                'Name': name, // Added Name
+                'Location': locationCode,
+                'Week': weekEndingDate,
+                'Date': formattedDate, // Retaining original date for tracking/debugging if needed
+                'PayCode': payCode,
+                'Department': departmentCode,
+                'Hours': (existingEntry ? existingEntry.Hours : 0) + hours
+            };
+            
+            payrollDataMap.set(key, newEntry);
+        });
+
+        // 6. Determine the final report date (most recent Week Ending Date)
+        let finalReportDate = null;
+        for (const entry of payrollDataMap.values()) {
+            // Compare the MMDDYYYY strings numerically (since they are ordered correctly)
+            if (!finalReportDate || entry.Week > finalReportDate) {
+                finalReportDate = entry.Week;
+            }
+        }
+
+        // 7. Check Holidays (Only if dates were found)
+        if (earliestDate && latestDate) {
+            const startYear = earliestDate.getUTCFullYear();
+            const endYear = latestDate.getUTCFullYear();
+            
+            const holidayDates = new Set();
+            for (let year = startYear; year <= endYear; year++) {
+                getHolidays(year).forEach(date => holidayDates.add(date));
+            }
+
+            let dateCursor = new Date(earliestDate);
+            while (dateCursor <= latestDate) {
+                const dateStr = formatDate(dateCursor);
+                if (holidayDates.has(dateStr)) {
+                    log(`⚠️ PAID HOLIDAY ALERT: ${new Date(dateCursor.getTime()).toDateString()} falls within the pay period.`, true);
+                }
+                dateCursor.setUTCDate(dateCursor.getUTCDate() + 1);
+            }
+        }
+
+        
+        const finalPayrollData = Array.from(payrollDataMap.values()).map(data => ({
+            // CRITICAL CHANGE: New required column order and mapping
+            'Name': data.Name,
+            'EEID': data.EEID,
+            'Date': data.Week, // Use the calculated Week Ending Date as the CSV Date column
+            'PayCode': data.PayCode,
+            'Location': data.Location,
+            'Department': data.Department,
+            'Hours': data.Hours.toFixed(2) // Format hours to 2 decimal places
+        }));
+
+        log(`|-- Aggregation complete. Total unique pay entries generated: ${finalPayrollData.length}`);
+        log(`|-- Final Payroll Date (used for filename): ${finalReportDate}`); // Log the determined date
+        log(`|-- Payroll Data Preview (Name, EEID, PayCode, Hours):`);
+        finalPayrollData.slice(0, 5).forEach(entry => {
+            log(`    - ${entry.Name}, ${entry.EEID}, ${entry.PayCode}, ${entry.Hours}`);
+        });
+
+        return { data: finalPayrollData, reportDate: finalReportDate };
+    };
+
+
+    /** Converts the final JSON data array into a CSV string. */
+    const convertToCSV = (data) => {
+        if (data.length === 0) return '';
+
+        const headers = Object.keys(data[0]);
+        const csvRows = [];
+
+        // 1. Headers (Use the headers from the final structure)
+        csvRows.push(headers.join(','));
+
+        // 2. Data
+        data.forEach(row => {
+            const values = headers.map(header => {
+                const escaped = ('' + row[header]).replace(/"/g, '\\"');
+                // Ensure values containing commas or newlines are wrapped in quotes
+                if (escaped.includes(',') || escaped.includes('\n')) {
+                    return `"${escaped}"`;
+                }
+                return escaped;
+            });
+            csvRows.push(values.join(','));
+        });
+
+        return csvRows.join('\n');
+    };
+
+    /** Handles the entire ETL process on button click. */
+    const processData = async () => {
+        if (isProcessing) return;
+        isProcessing = true;
+        
+        // UI State: Disable button, show spinner
+        document.getElementById('buttonText').textContent = 'Processing...';
+        document.getElementById('loadingSpinner').classList.remove('hidden');
+        document.getElementById('processButton').disabled = true;
+        document.getElementById('downloadArea').classList.add('hidden');
+        document.getElementById('logContainer').innerHTML = ''; // Clear log
+
+        log('--- STARTING PAYROLL PROCESS ---');
+
+        try {
+            // 1. Fetch data from the two required sources via the Worker proxy
+            const timeEntryData = await fetchData('report1');
+            await fetchData('report2'); // Fetch but don't use yet.
+
+            // Ensure data arrays are present and not empty
+            if (!timeEntryData || timeEntryData.length === 0) {
+                log('!! ERROR: Time Entry data source returned zero records. Aborting.', true);
+                throw new Error("No time entry data found. Cannot proceed with payroll.");
+            }
+
+            // 2. Transform and Aggregate
+            const result = transformData(timeEntryData);
+            const finalData = result.data;
+            const finalReportDate = result.reportDate;
+
+            // 3. Generate CSV
+            const csvContent = convertToCSV(finalData);
+
+            // 4. Create and trigger download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const downloadButton = document.getElementById('downloadCSV');
+            downloadButton.href = url;
+            // CRITICAL CHANGE: Updated file name format using the latest week ending date
+            downloadButton.download = `Picks-Payroll-Upload-${finalReportDate}.csv`;
+            
+            document.getElementById('downloadArea').classList.remove('hidden');
+            log('--- PROCESS COMPLETE ---');
+            
+        } catch (e) {
+            // Catch the error thrown from fetchData or the 0-record check
+            log(`!! FATAL ERROR during processing: ${e.message}`, true);
+        } finally {
+            isProcessing = false;
+            document.getElementById('buttonText').textContent = 'Process Data and Generate Payroll File';
+            document.getElementById('loadingSpinner').classList.add('hidden');
+            document.getElementById('processButton').disabled = false;
+        }
+    };
+    
+    // ====================================================================
+    // 4. INITIALIZATION AND EVENT LISTENERS
+    // ====================================================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Proxy Status Alert initialization REMOVED
+
+        // Attach event listener to the button
+        const processButton = document.getElementById('processButton');
+        processButton.addEventListener('click', processData);
+        log('INFO: DOMContentLoaded fired. Event listener attached to processButton.');
+
+        // Add an href to the download button/link element
+        const downloadButton = document.getElementById('downloadCSV');
+        if (downloadButton && downloadButton.tagName !== 'A') {
+            console.error("Download element is not an anchor tag. Correcting its structure for download functionality.");
+            // Quick fix for download button being a <button> instead of <a>
+        }
+    });
 
 </script>
 </body>
 </html>
-
-

@@ -12,11 +12,11 @@
         
         /* Define custom brand colors: Primary Accent #760000, Structure #595959, White #FFFFFF */
         .bg-picks-red { background-color: #760000; }
-        .hover\:bg-picks-red-dark:hover { background-color: #5A0000 !important; } /* FIX: Enforce hover color */
+        .hover\:bg-picks-red-dark:hover { background-color: #5A0000 !important; }
         .focus\:ring-picks-red-light:focus { --tw-ring-color: #A34747; }
         .text-picks-dark-gray { color: #595959; }
         
-        .bg-picks-structure { background-color: #595959 !important; } /* FIX: Enforce background color for log/alert */
+        .bg-picks-structure { background-color: #595959 !important; } 
         
         .border-picks-structure-light { border-color: #8C8C8C; }
 
@@ -39,8 +39,7 @@
 
             <h1 class="text-3xl font-extrabold text-picks-dark-gray mb-2">Picks Payroll Data Processor</h1>
             <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
-
-            </div>
+        </div>
 
         <div class="p-6 sm:p-10">
 
@@ -57,7 +56,17 @@
                 <a id="downloadCSV" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-150">
                     Download Payroll CSV
                 </a>
-                <p class="text-sm text-gray-500 mt-2">File name: payroll_upload_[Date].csv</p>
+                <p class="text-sm text-gray-500 mt-2">File name: Picks-Payroll-Upload-[WeekEndingDate].csv</p>
+            </div>
+            
+            <div id="visualReportArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                <h2 class="text-xl font-bold text-picks-dark-gray mb-4">Payroll Summary Report</h2>
+                <div class="bg-gray-50 p-4 border rounded-lg max-h-96 overflow-y-auto">
+                    <table id="payrollReportTable" class="min-w-full divide-y divide-gray-300">
+                        <tbody class="divide-y divide-gray-200" id="reportBody">
+                            </tbody>
+                    </table>
+                </div>
             </div>
 
             <h2 class="text-xl font-bold text-picks-dark-gray mt-8 mb-4">Execution Log & Evidence </h2>
@@ -280,7 +289,7 @@
     };
 
     /** Transforms raw report data into aggregated payroll structure. */
-    const transformData = (timeEntries, ptoEntries) => { // FIX: Accept both arrays
+    const transformData = (timeEntries, ptoEntries) => {
         log(`|-- Starting data aggregation and transformation...`);
         
         // FIX: Combine all entries into a single array for unified processing
@@ -290,7 +299,7 @@
         let earliestDate = null;
         let latestDate = null; // Will be used to determine the final payroll date.
         
-        allEntries.forEach(entry => { // FIX: Iterate over allEntries
+        allEntries.forEach(entry => {
             const eeid = entry.EEID || 'UNKNOWN';
             const name = entry.Name || 'UNKNOWN NAME'; // Added Name extraction
             const rawLocation = entry.Location || 'UNKNOWN';
@@ -417,17 +426,70 @@
 
         return csvRows.join('\n');
     };
+    
+    /** Renders the aggregated payroll data to an on-screen table. */
+    const renderSummaryReport = (data) => {
+        const reportArea = document.getElementById('visualReportArea');
+        const tableBody = document.getElementById('reportBody');
+        const tableContainer = document.getElementById('payrollReportTable');
+        
+        // Ensure only one <thead> exists (clear previous runs)
+        let header = tableContainer.querySelector('thead');
+        if (header) header.remove();
+        
+        tableBody.innerHTML = ''; // Clear previous data
+
+        if (data.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500">No data records were generated.</td></tr>';
+            reportArea.classList.remove('hidden');
+            return;
+        }
+
+        // 1. Create Table Header
+        const headerRow = document.createElement('thead');
+        headerRow.className = 'bg-gray-200';
+        headerRow.innerHTML = `
+            <tr>
+                <th class="p-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider rounded-tl-lg">Name (EEID)</th>
+                <th class="p-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date (Week Ending)</th>
+                <th class="p-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pay Code</th>
+                <th class="p-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider rounded-tr-lg">Hours</th>
+            </tr>
+        `;
+        // Prepend the new header
+        tableContainer.prepend(headerRow);
+
+
+        // 2. Render Data Rows
+        data.forEach(entry => {
+            const row = tableBody.insertRow();
+            row.className = 'bg-white hover:bg-gray-100 transition duration-150';
+            
+            row.innerHTML = `
+                <td class="p-3 text-sm font-medium text-picks-dark-gray whitespace-nowrap">${entry.Name} (<span class="font-mono text-gray-500">${entry.EEID}</span>)</td>
+                <td class="p-3 text-sm text-gray-700 whitespace-nowrap">${entry.Date}</td>
+                <td class="p-3 text-sm text-gray-700 whitespace-nowrap font-mono">${entry.PayCode}</td>
+                <td class="p-3 text-sm text-right font-bold text-green-700 whitespace-nowrap">${entry.Hours}</td>
+            `;
+        });
+
+        // 3. Show the report area
+        reportArea.classList.remove('hidden');
+        log('|-- Summary report generated on screen.');
+    };
+
 
     /** Handles the entire ETL process on button click. */
     const processData = async () => {
         if (isProcessing) return;
         isProcessing = true;
         
-        // UI State: Disable button, show spinner
+        // UI State: Disable button, show spinner, hide outputs
         document.getElementById('buttonText').textContent = 'Processing...';
         document.getElementById('loadingSpinner').classList.remove('hidden');
         document.getElementById('processButton').disabled = true;
         document.getElementById('downloadArea').classList.add('hidden');
+        document.getElementById('visualReportArea').classList.add('hidden'); // NEW: Hide visual report
         document.getElementById('logContainer').innerHTML = ''; // Clear log
 
         log('--- STARTING PAYROLL PROCESS ---');
@@ -435,16 +497,19 @@
         try {
             // 1. Fetch data from the two required sources via the Worker proxy
             const timeEntryData = await fetchData('report1');
-            const ptoData = await fetchData('report2'); // FIX: Store the PTO data
+            const ptoData = await fetchData('report2'); 
 
             // Ensure data arrays are present and not empty
-            if (!timeEntryData || timeEntryData.length === 0) {
-                log('!! ERROR: Time Entry data source returned zero records. Aborting.', true);
-                throw new Error("No time entry data found. Cannot proceed with payroll.");
+            if (!timeEntryData && (!ptoData || ptoData.length === 0)) { // Check if ALL data sources are empty
+                log('!! ERROR: Both Time Entry and PTO data sources returned zero records. Aborting.', true);
+                throw new Error("No payroll data found. Cannot proceed with payroll.");
             }
+            // Fallback for empty timeEntryData (will still process PTO if available)
+            const allTimeEntries = timeEntryData || [];
+            const allPtoEntries = ptoData || [];
 
             // 2. Transform and Aggregate
-            const result = transformData(timeEntryData, ptoData); // FIX: Pass both datasets
+            const result = transformData(allTimeEntries, allPtoEntries);
             const finalData = result.data;
             const finalReportDate = result.reportDate;
 
@@ -457,8 +522,10 @@
             
             const downloadButton = document.getElementById('downloadCSV');
             downloadButton.href = url;
-            // CRITICAL CHANGE: Updated file name format using the latest week ending date
             downloadButton.download = `Picks-Payroll-Upload-${finalReportDate}.csv`;
+            
+            // 5. Render Visual Report
+            renderSummaryReport(finalData);
             
             document.getElementById('downloadArea').classList.remove('hidden');
             log('--- PROCESS COMPLETE ---');
@@ -488,11 +555,9 @@
         const downloadButton = document.getElementById('downloadCSV');
         if (downloadButton && downloadButton.tagName !== 'A') {
             console.error("Download element is not an anchor tag. Correcting its structure for download functionality.");
-            // Quick fix for download button being a <button> instead of <a>
         }
     });
 
 </script>
 </body>
 </html>
-

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PicksPay Payroll Processor</title>
-    <!-- Corrected link: Removed Markdown formatting -->
+    <title>Picks Payroll Data Processor</title>
+    <!-- Favicon Placeholder - REPLACE WITH YOUR ACTUAL FAVICON LINK -->
+    <link rel="icon" href="https://placehold.co/32x32/104169/ffffff?text=P" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
@@ -17,16 +18,18 @@
 <div class="min-h-screen p-4 sm:p-8">
     <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-6 sm:p-10">
 
-        <h1 class="text-3xl font-extrabold text-indigo-800 mb-2">Payroll Data Processor</h1>
+        <!-- Logo Placeholder - REPLACE WITH YOUR ACTUAL LOGO LINK -->
+        <img src="https://placehold.co/180x40/104169/ffffff?text=PicksGallery+Logo" alt="PicksGallery Company Logo" class="mb-4 rounded-lg">
+
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Picks Payroll Data Processor</h1>
         <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
 
         <!-- Proxy Status Alert (Initial State/Failure) -->
         <div id="proxy-alert" class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-4 rounded-lg mb-6 hidden" role="alert">
         </div>
 
-        <!-- Main Action Button -->
-        <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:bg-indigo-400">
-            <!-- Corrected xmlns link: Removed Markdown formatting -->
+        <!-- Main Action Button (Updated to Blue color scheme) -->
+        <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out disabled:bg-blue-400">
             <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -44,7 +47,7 @@
         </div>
 
         <!-- Execution Log & Evidence -->
-        <h2 class="text-xl font-bold text-indigo-800 mt-8 mb-4">Execution Log & Evidence </h2>
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">Execution Log & Evidence </h2>
         <div id="logContainer" class="bg-gray-50 p-4 border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
             <p class="text-gray-500">Log empty. Click 'Process Data' to begin...</p>
         </div>

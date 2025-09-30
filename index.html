@@ -280,14 +280,17 @@
     };
 
     /** Transforms raw report data into aggregated payroll structure. */
-    const transformData = (timeEntries) => {
+    const transformData = (timeEntries, ptoEntries) => { // FIX: Accept both arrays
         log(`|-- Starting data aggregation and transformation...`);
+        
+        // FIX: Combine all entries into a single array for unified processing
+        const allEntries = [...timeEntries, ...ptoEntries];
 
         const payrollDataMap = new Map(); // Key: EEID_PayCode_Week, Value: { EEID, Name, PayCode, Hours, ... }
         let earliestDate = null;
         let latestDate = null; // Will be used to determine the final payroll date.
         
-        timeEntries.forEach(entry => {
+        allEntries.forEach(entry => { // FIX: Iterate over allEntries
             const eeid = entry.EEID || 'UNKNOWN';
             const name = entry.Name || 'UNKNOWN NAME'; // Added Name extraction
             const rawLocation = entry.Location || 'UNKNOWN';
@@ -432,7 +435,7 @@
         try {
             // 1. Fetch data from the two required sources via the Worker proxy
             const timeEntryData = await fetchData('report1');
-            await fetchData('report2'); // Fetch but don't use yet.
+            const ptoData = await fetchData('report2'); // FIX: Store the PTO data
 
             // Ensure data arrays are present and not empty
             if (!timeEntryData || timeEntryData.length === 0) {
@@ -441,7 +444,7 @@
             }
 
             // 2. Transform and Aggregate
-            const result = transformData(timeEntryData);
+            const result = transformData(timeEntryData, ptoData); // FIX: Pass both datasets
             const finalData = result.data;
             const finalReportDate = result.reportDate;
 
@@ -476,8 +479,6 @@
     // ====================================================================
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Proxy Status Alert initialization REMOVED
-
         // Attach event listener to the button
         const processButton = document.getElementById('processButton');
         processButton.addEventListener('click', processData);
@@ -494,3 +495,4 @@
 </script>
 </body>
 </html>
+

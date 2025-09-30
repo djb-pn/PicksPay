@@ -4,13 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Picks Payroll Data Processor</title>
-    <!-- Favicon: Using the uploaded file -->
-    <link rel="icon" href="uploaded:Favicon16.ico" type="image/x-icon">
+    <!-- Favicon: Corrected path for GitHub Pages deployment -->
+    <link rel="icon" href="Favicon16.ico" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
         .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dotted #e0e0e0; }
-        .log-alert { font-weight: bold; color: #dc2626; }
+        /* Use lighter colors for log text on dark mode for consistency */
+        .log-entry.text-red-700 { color: #f87171; } /* Light red */
+        .log-entry.text-gray-800 { color: #e5e7eb; } /* Light gray */
+        .log-entry .text-gray-400 { color: #9ca3af; } /* Medium gray for timestamp */
+
         /* Define custom red color for brand consistency */
         .bg-picks-red { background-color: #A31A21; }
         .hover\:bg-picks-red-dark:hover { background-color: #7A141A; }
@@ -20,40 +24,48 @@
 <body>
 
 <div class="min-h-screen p-4 sm:p-8">
-    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-6 sm:p-10">
+    <!-- Main content card with rounded corners -->
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl">
 
-        <!-- Logo: Using the uploaded file -->
-        <img src="uploaded:26264_Picks-Gallery.png-6e88e690-9583-41f4-acd4-01852026809c" alt="Picks Gallery Logo" class="mb-4 w-48 h-auto rounded-lg">
+        <!-- Header Section: Dark Background to blend with logo -->
+        <div class="bg-gray-900 p-6 sm:p-10 rounded-t-2xl">
+            <!-- Logo: Corrected path for GitHub Pages deployment -->
+            <img src="26264_Picks-Gallery.png" alt="Picks Gallery Logo" class="mb-4 w-48 h-auto">
 
-        <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Picks Payroll Data Processor</h1>
-        <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
+            <h1 class="text-3xl font-extrabold text-white mb-2">Picks Payroll Data Processor</h1>
+            <p class="text-gray-400 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
 
-        <!-- Proxy Status Alert (Initial State/Failure) -->
-        <div id="proxy-alert" class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-4 rounded-lg mb-6 hidden" role="alert">
-        </div>
+            <!-- Proxy Status Alert (Initial State/Failure) - Inverted colors for dark background -->
+            <div id="proxy-alert" class="bg-gray-800 border-l-4 border-yellow-400 text-yellow-300 p-4 rounded-lg mb-6 hidden" role="alert">
+            </div>
+        </div>
 
-        <!-- Main Action Button (Updated to Picks Red color scheme) -->
-        <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-md text-white bg-picks-red hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-picks-red">
-            <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span id="buttonText">Process Data and Generate Payroll File</span>
-        </button>
+        <!-- Main Body Section: White Background for interaction/readability -->
+        <div class="p-6 sm:p-10">
 
-        <!-- Download Area (Hidden until complete) -->
-        <div id="downloadArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
-            <h2 class="text-2xl font-bold text-green-600 mb-4">Processing Complete! </h2>
-            <a id="downloadCSV" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-150">
-                Download Payroll CSV
-            </a>
-            <p class="text-sm text-gray-500 mt-2">File name: payroll_upload_[Date].csv</p>
-        </div>
+            <!-- Main Action Button (Picks Red color scheme) -->
+            <button id="processButton" class="w-full mt-6 flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-md text-white bg-picks-red hover:bg-picks-red-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-picks-red-light transition duration-150 ease-in-out disabled:opacity-60 disabled:bg-picks-red">
+                <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="buttonText">Process Data and Generate Payroll File</span>
+            </button>
 
-        <!-- Execution Log & Evidence -->
-        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">Execution Log & Evidence </h2>
-        <div id="logContainer" class="bg-gray-50 p-4 border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
-            <p class="text-gray-500">Log empty. Click 'Process Data' to begin...</p>
+            <!-- Download Area (Hidden until complete) -->
+            <div id="downloadArea" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                <h2 class="text-2xl font-bold text-green-600 mb-4">Processing Complete! </h2>
+                <a id="downloadCSV" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-150">
+                    Download Payroll CSV
+                </a>
+                <p class="text-sm text-gray-500 mt-2">File name: payroll_upload_[Date].csv</p>
+            </div>
+
+            <!-- Execution Log & Evidence -->
+            <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">Execution Log & Evidence </h2>
+            <div id="logContainer" class="bg-gray-900 p-4 border border-gray-700 rounded-lg max-h-96 overflow-y-auto">
+                <p class="text-gray-400">Log empty. Click 'Process Data' to begin...</p>
+            </div>
         </div>
     </div>
 </div>
@@ -90,11 +102,14 @@
         const logContainer = document.getElementById('logContainer');
         const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const logEntry = document.createElement('p');
-        logEntry.className = isError ? 'log-entry text-red-700' : 'log-entry text-gray-800';
+        
+        // Use custom class names defined in the style block for color-inversion
+        logEntry.className = isError ? 'log-entry text-red-700' : 'log-entry text-gray-800'; 
+
         logEntry.innerHTML = `<span class="text-gray-400">${timestamp} | </span>${message}`;
         
         // Remove 'Log empty' message if present
-        if (logContainer.querySelector('.text-gray-500')) {
+        if (logContainer.querySelector('.text-gray-400')) { // Updated selector based on new empty log text color
             logContainer.innerHTML = '';
         }
 
@@ -182,10 +197,6 @@
                     }
                 }
                 date.setUTCDate(date.getUTCDate() + 1);
-                if (n === 'last' && date.getUTCMonth() !== month) {
-                    date.setUTCDate(date.getUTCDate() - 1); // Roll back to last day of week in month
-                    return date;
-                }
             }
             return null;
         };

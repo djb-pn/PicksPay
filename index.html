@@ -117,7 +117,6 @@
         if (!rawText) return log(`Warning: ${fieldName} is null/empty. Using 'NA'.`, true) || 'NA';
 
         // 1. Simple Code Check: If the text is short and contains only uppercase letters, numbers, and /, assume it's already the code.
-        // This is necessary because the previous regex-based check failed for clean codes like "REG".
         if (rawText.match(/^[A-Z0-9/]+$/)) {
             return rawText;
         }
@@ -268,12 +267,13 @@
     const transformData = (timeEntries) => {
         log(`|-- Starting data aggregation and transformation...`);
 
-        const payrollDataMap = new Map(); // Key: EEID_PayCode, Value: { EEID, PayCode, Hours }
+        const payrollDataMap = new Map(); // Key: EEID_PayCode_Week, Value: { EEID, Name, PayCode, Hours, ... }
         let earliestDate = null;
-        let latestDate = null;
+        let latestDate = null; // Will be used to determine the final payroll date.
         
         timeEntries.forEach(entry => {
             const eeid = entry.EEID || 'UNKNOWN';
+            const name = entry.Name || 'UNKNOWN NAME'; // Added Name extraction
             const rawLocation = entry.Location || 'UNKNOWN';
             const rawDepartment = entry.Department || 'UNKNOWN';
             const hours = parseFloat(entry.Hours) || 0.0;
@@ -290,7 +290,6 @@
             if (!latestDate || dateObj > latestDate) latestDate = dateObj;
 
             // 1. Determine Pay Code and Department Code
-            // The extractCode logic is now updated to handle both simple codes ("REG") and complex strings ("Task - SVG").
             const payCode = extractCode(entry.PayCode, 'PayCode'); 
             const departmentCode = extractCode(rawDepartment, 'Department'); 
             
@@ -300,7 +299,7 @@
             // 3. Determine Week Ending Date (Next Saturday)
             const weekEndingDate = calculateWeekEndingDate(rawDate);
             
-            // 4. Determine Date in MMDDYYYY format
+            // 4. Determine Date in MMDDYYYY format (Note: This is the original date, not the Week ending date)
             const formattedDate = formatDate(rawDate);
 
             // 5. Aggregate
@@ -310,9 +309,10 @@
 
             const newEntry = {
                 'EEID': eeid,
+                'Name': name, // Added Name
                 'Location': locationCode,
                 'Week': weekEndingDate,
-                'Date': formattedDate,
+                'Date': formattedDate, // Retaining original date for tracking/debugging if needed
                 'PayCode': payCode,
                 'Department': departmentCode,
                 'Hours': (existingEntry ? existingEntry.Hours : 0) + hours
@@ -321,7 +321,16 @@
             payrollDataMap.set(key, newEntry);
         });
 
-        // 6. Check Holidays (Only if dates were found)
+        // 6. Determine the final report date (most recent Week Ending Date)
+        let finalReportDate = null;
+        for (const entry of payrollDataMap.values()) {
+            // Compare the MMDDYYYY strings numerically (since they are ordered correctly)
+            if (!finalReportDate || entry.Week > finalReportDate) {
+                finalReportDate = entry.Week;
+            }
+        }
+
+        // 7. Check Holidays (Only if dates were found)
         if (earliestDate && latestDate) {
             const startYear = earliestDate.getUTCFullYear();
             const endYear = latestDate.getUTCFullYear();
@@ -340,25 +349,27 @@
                 dateCursor.setUTCDate(dateCursor.getUTCDate() + 1);
             }
         }
+
         
         const finalPayrollData = Array.from(payrollDataMap.values()).map(data => ({
-            // Reorder columns for final output consistency (based on typical payroll file structure)
+            // CRITICAL CHANGE: New required column order and mapping
+            'Name': data.Name,
             'EEID': data.EEID,
-            'Location': data.Location,
-            'Week': data.Week,
-            'Date': data.Date,
+            'Date': data.Week, // Use the calculated Week Ending Date as the CSV Date column
             'PayCode': data.PayCode,
+            'Location': data.Location,
             'Department': data.Department,
             'Hours': data.Hours.toFixed(2) // Format hours to 2 decimal places
         }));
 
         log(`|-- Aggregation complete. Total unique pay entries generated: ${finalPayrollData.length}`);
-        log(`|-- Payroll Data Preview (EEID, Location, PayCode, Hours):`);
+        log(`|-- Final Payroll Date (used for filename): ${finalReportDate}`); // Log the determined date
+        log(`|-- Payroll Data Preview (Name, EEID, PayCode, Hours):`);
         finalPayrollData.slice(0, 5).forEach(entry => {
-            log(`    - ${entry.EEID}, ${entry.Location}, ${entry.PayCode}, ${entry.Hours}`);
+            log(`    - ${entry.Name}, ${entry.EEID}, ${entry.PayCode}, ${entry.Hours}`);
         });
 
-        return finalPayrollData;
+        return { data: finalPayrollData, reportDate: finalReportDate };
     };
 
 
@@ -414,7 +425,9 @@
             }
 
             // 2. Transform and Aggregate
-            const finalData = transformData(timeEntryData);
+            const result = transformData(timeEntryData);
+            const finalData = result.data;
+            const finalReportDate = result.reportDate;
 
             // 3. Generate CSV
             const csvContent = convertToCSV(finalData);
@@ -425,7 +438,8 @@
             
             const downloadButton = document.getElementById('downloadCSV');
             downloadButton.href = url;
-            downloadButton.download = `payroll_upload_${formatDate(new Date())}.csv`;
+            // CRITICAL CHANGE: Updated file name format using the latest week ending date
+            downloadButton.download = `Picks-Payroll-Upload-${finalReportDate}.csv`;
             
             document.getElementById('downloadArea').classList.remove('hidden');
             log('--- PROCESS COMPLETE ---');

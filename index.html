@@ -275,7 +275,7 @@
             if (!latestDate || dateObj > latestDate) latestDate = dateObj;
 
             // 1. Determine Pay Code and Department Code
-            // REVERTED: Apply extractCode to entry.PayCode to get the last all-caps word.
+            // Apply extractCode to entry.PayCode to get the last all-caps word.
             const payCode = extractCode(entry.PayCode, 'PayCode'); 
             const departmentCode = extractCode(rawDepartment, 'Department'); 
             
@@ -452,4 +452,5 @@
 </script>
 </body>
 </html>
+
 

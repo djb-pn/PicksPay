@@ -39,7 +39,7 @@
 
             <h1 class="text-3xl font-extrabold text-picks-dark-gray mb-2">Picks Payroll Data Processor</h1>
             <p class="text-gray-500 mb-8">Consolidate Striven Reports for Payroll Software Upload.</p>
-        </div>
+            </div>
 
         <div class="p-6 sm:p-10">
 
@@ -115,7 +115,7 @@
 
         logEntry.innerHTML = `<span class="text-gray-400">${timestamp} | </span>${message}`;
         
-        // FIX: Clean logic to remove 'Log empty' message if present
+        // Remove 'Log empty' message if present
         if (logContainer.firstElementChild && logContainer.firstElementChild.textContent.includes("Log empty.")) {
             logContainer.innerHTML = '';
         }
@@ -292,8 +292,10 @@
     const transformData = (timeEntries, ptoEntries) => {
         log(`|-- Starting data aggregation and transformation...`);
         
-        // FIX: Combine all entries into a single array for unified processing
-        const allEntries = [...timeEntries, ...ptoEntries];
+        // FIX: Combine and tag entries from both reports to identify source later
+        const taggedTimeEntries = timeEntries.map(e => ({ ...e, source: 'time' }));
+        const taggedPtoEntries = ptoEntries.map(e => ({ ...e, source: 'pto' }));
+        const allEntries = [...taggedTimeEntries, ...taggedPtoEntries];
 
         const payrollDataMap = new Map(); // Key: EEID_PayCode_Week, Value: { EEID, Name, PayCode, Hours, ... }
         let earliestDate = null;
@@ -303,7 +305,7 @@
             const eeid = entry.EEID || 'UNKNOWN';
             const name = entry.Name || 'UNKNOWN NAME'; // Added Name extraction
             const rawLocation = entry.Location || 'UNKNOWN';
-            const rawDepartment = entry.Department || 'UNKNOWN';
+            const rawDepartment = entry.Department;
             const hours = parseFloat(entry.Hours) || 0.0;
             const dateObj = new Date(entry.Date);
             const rawDate = entry.Date;
@@ -319,7 +321,19 @@
 
             // 1. Determine Pay Code and Department Code
             const payCode = extractCode(entry.PayCode, 'PayCode'); 
-            const departmentCode = extractCode(rawDepartment, 'Department'); 
+            
+            // CRITICAL FIX: Default Department to 'OFFICE' for PTO entries (report2)
+            let effectiveDepartment = rawDepartment;
+            if (entry.source === 'pto') {
+                effectiveDepartment = 'OFFICE';
+                // Note: Skipping log here for brevity, assuming this is an expected standard rule
+            } else if (!effectiveDepartment) {
+                 // Fallback if the time entry report is missing the department for some reason
+                 effectiveDepartment = 'UNKNOWN';
+                 log(`Warning: Department missing for Time entry (EEID: ${eeid}). Using 'UNKNOWN'.`, true);
+            }
+            
+            const departmentCode = extractCode(effectiveDepartment, 'Department'); 
             
             // 2. Determine Location Code
             const locationCode = LOCATION_MAP[rawLocation] || log(`Warning: Unknown location "${rawLocation}" for EEID ${eeid}. Using 'NA'.`, true) || 'NA';
@@ -489,7 +503,7 @@
         document.getElementById('loadingSpinner').classList.remove('hidden');
         document.getElementById('processButton').disabled = true;
         document.getElementById('downloadArea').classList.add('hidden');
-        document.getElementById('visualReportArea').classList.add('hidden'); // NEW: Hide visual report
+        document.getElementById('visualReportArea').classList.add('hidden');
         document.getElementById('logContainer').innerHTML = ''; // Clear log
 
         log('--- STARTING PAYROLL PROCESS ---');
@@ -499,14 +513,15 @@
             const timeEntryData = await fetchData('report1');
             const ptoData = await fetchData('report2'); 
 
-            // Ensure data arrays are present and not empty
-            if (!timeEntryData && (!ptoData || ptoData.length === 0)) { // Check if ALL data sources are empty
-                log('!! ERROR: Both Time Entry and PTO data sources returned zero records. Aborting.', true);
-                throw new Error("No payroll data found. Cannot proceed with payroll.");
-            }
-            // Fallback for empty timeEntryData (will still process PTO if available)
+            // Handle case where one or both reports might return null/empty
             const allTimeEntries = timeEntryData || [];
             const allPtoEntries = ptoData || [];
+
+            // Check if ALL data sources are empty after fetching
+            if (allTimeEntries.length === 0 && allPtoEntries.length === 0) { 
+                log('!! ERROR: All data sources returned zero records. Aborting.', true);
+                throw new Error("No payroll data found. Cannot proceed with payroll.");
+            }
 
             // 2. Transform and Aggregate
             const result = transformData(allTimeEntries, allPtoEntries);
